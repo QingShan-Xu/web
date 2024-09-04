@@ -81,7 +81,7 @@ func handlToken() gin.HandlerFunc {
 			return
 		}
 
-		token, err := utils.Utils.Token.ParseToken(tokenStr)
+		user_id, err := utils.Utils.Token.ParseToken(tokenStr)
 		if err != nil {
 			res.Callback = "/"
 			res.FailFront(err.Error()).Send(ctx)
@@ -89,7 +89,7 @@ func handlToken() gin.HandlerFunc {
 			return
 		}
 
-		ctx.Set("reqToken", token)
+		ctx.Set("user_id", user_id)
 		ctx.Next()
 	}
 }
