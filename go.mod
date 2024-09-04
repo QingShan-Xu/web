@@ -1,4 +1,4 @@
-module gitee.com/be_clear/xjh
+module github.com/QingShan-Xu/xjh
 
 go 1.22.5
 
