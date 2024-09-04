@@ -115,7 +115,7 @@ func handleBindAll(route *Route) gin.HandlerFunc {
 		}
 
 		if !strings.Contains(route.Path, ":") && route.Method != METHOD.GET {
-			err = ctx.ShouldBind(&route.Bind)
+			err = ctx.ShouldBind(route.Bind)
 		}
 
 		if err != nil {
