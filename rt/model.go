@@ -1,7 +1,7 @@
 package rt
 
 import (
-	"gitee.com/be_clear/xjh/bm"
+	"github.com/QingShan-Xu/xjh/bm"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

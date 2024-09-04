@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	"gitee.com/be_clear/xjh/bm"
+	"github.com/QingShan-Xu/xjh/bm"
 
 	"gorm.io/gorm"
 )

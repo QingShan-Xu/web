@@ -1,7 +1,7 @@
 package rt
 
 import (
-	"gitee.com/be_clear/xjh/cf"
+	"github.com/QingShan-Xu/xjh/cf"
 )
 
 func Init(route *Route) {

@@ -7,9 +7,9 @@ import (
 	"reflect"
 	"strings"
 
-	"gitee.com/be_clear/xjh/bm"
-	"gitee.com/be_clear/xjh/cf"
-	"gitee.com/be_clear/xjh/utils"
+	"github.com/QingShan-Xu/xjh/bm"
+	"github.com/QingShan-Xu/xjh/cf"
+	"github.com/QingShan-Xu/xjh/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"

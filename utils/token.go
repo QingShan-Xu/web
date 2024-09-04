@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"gitee.com/be_clear/xjh/cf"
+	"github.com/QingShan-Xu/xjh/cf"
 
 	"github.com/golang-jwt/jwt/v5"
 )
