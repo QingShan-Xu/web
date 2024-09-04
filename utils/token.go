@@ -13,18 +13,18 @@ import (
 
 type Token struct{}
 
-func (_this *Token) GenToken(tokenStruct interface{}) (string, error) {
-	data, err := json.Marshal(tokenStruct)
+func (_this *Token) GenToken(id int) (string, error) {
+	userID, err := json.Marshal(id)
 	if err != nil {
 		return "", fmt.Errorf("TokenErr")
 	}
 
 	// 定义 JWT 的声明
 	claims := jwt.MapClaims{
-		"sub":  "user",                                // 主题为用户
-		"exp":  time.Now().Add(72 * time.Hour).Unix(), // 过期时间为 3 天后
-		"iat":  time.Now().Unix(),                     // 签发时间
-		"data": data,                                  // 用户ID
+		"sub":     "user",                                // 主题为用户
+		"exp":     time.Now().Add(72 * time.Hour).Unix(), // 过期时间为 3 天后
+		"iat":     time.Now().Unix(),                     // 签发时间
+		"user_id": userID,                                // 用户ID
 	}
 
 	// 使用声明创建新 Token
@@ -62,5 +62,10 @@ func (_this *Token) ParseToken(tokenStr string) (interface{}, error) {
 		return 0, fmt.Errorf("无效的Token")
 	}
 
-	return claims, nil
+	usrID, ok := claims["user_id"].(int)
+	if !ok {
+		return 0, fmt.Errorf("无效的Token")
+	}
+
+	return usrID, nil
 }
