@@ -83,7 +83,9 @@ func genDB(TX *gorm.DB, route *Route) {
 			TX.InnerJoins(route.INNER_JOINS)
 		case "PRELOAD":
 			fmt.Printf("%s 是未测试功能, 请联系管理员", route.Type)
-			TX.Preload(route.PRELOAD)
+			for _, preload := range route.PRELOAD {
+				TX.Preload(preload)
+			}
 		case "GROUP":
 			fmt.Printf("%s 是未测试功能, 请联系管理员", route.Type)
 			TX.Group(route.GROUP)

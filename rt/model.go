@@ -76,7 +76,7 @@ type Route struct {
 	OFFSET      int
 	JOINS       string
 	INNER_JOINS string
-	PRELOAD     string
+	PRELOAD     []string
 	TABLE       string
 	GROUP       string
 }
