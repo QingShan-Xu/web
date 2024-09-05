@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"mime/multipart"
 	"reflect"
 	"strings"
 
@@ -199,6 +198,7 @@ func handleTYPE(route *Route) gin.HandlerFunc {
 }
 
 func createDataInstance(dataType interface{}, copyValues bool) (reflect.Value, error) {
+
 	if dataType == nil {
 		return reflect.Value{}, fmt.Errorf("dataType cannot be nil")
 	}
@@ -218,19 +218,7 @@ func createDataInstance(dataType interface{}, copyValues bool) (reflect.Value, e
 	newInstance := reflect.New(dataReflectType)
 
 	if copyValues {
-		for i := 0; i < dataReflectType.NumField(); i++ {
-			field := dataReflectType.Field(i)
-			if field.Type == reflect.TypeOf((*multipart.FileHeader)(nil)) {
-				// 特殊处理 multipart.FileHeader
-				if dataReflectValue.Field(i).IsValid() {
-					newInstance.Elem().Field(i).Set(dataReflectValue.Field(i))
-				}
-			} else {
-				if dataReflectValue.Field(i).CanSet() {
-					newInstance.Elem().Field(i).Set(dataReflectValue.Field(i))
-				}
-			}
-		}
+		newInstance.Elem().Set(dataReflectValue)
 	}
 
 	return newInstance, nil
