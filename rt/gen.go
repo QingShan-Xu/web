@@ -270,7 +270,7 @@ func map2SqlStr(data map[string]interface{}) (string, []interface{}) {
 			vals = append(vals, val)
 		}
 	}
-	return strings.Join(sql, "AND"), vals
+	return strings.Join(sql, " AND "), vals
 }
 
 // AssignMatchingFields 将 data 的字段值赋值给 model 中相应的字段
