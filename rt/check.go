@@ -89,13 +89,13 @@ func checkItem(route Route) {
 }
 
 func checkGroup(route Route) {
-	var name string
-	if route.Path != "" {
-		name = route.Path
-	}
-	if route.Name != "" {
-		name = route.Name
-	}
+	// var name string
+	// if route.Path != "" {
+	// 	name = route.Path
+	// }
+	// if route.Name != "" {
+	// 	name = route.Name
+	// }
 
 	// allowedMap := map[string]struct{}{
 	// 	"NoToken":     {},
