@@ -95,9 +95,11 @@ func genDB(TX *gorm.DB, route *Route) {
 			TX.Group(route.GROUP)
 		case "DISTINCT":
 			fmt.Printf("%s 是未测试功能, 请联系管理员", route.Type)
-			for _, distinct := range route.DISTINCT {
-				TX.Distinct(distinct)
+			interfaceFields := make([]interface{}, len(route.DISTINCT))
+			for i, v := range route.DISTINCT {
+				interfaceFields[i] = v
 			}
+			TX.Distinct(interfaceFields...)
 		case "Limit":
 			fmt.Printf("%s 是未测试功能, 请联系管理员", route.Type)
 			TX.Limit(route.LIMIT)
