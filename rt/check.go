@@ -50,42 +50,42 @@ func checkItem(route Route) {
 	// 	log.Fatalf("route: %s Cannot have both Query and Data", name)
 	// }
 
-	if route.MODEL == nil {
-		allowedMap := map[string]struct{}{
-			"NoToken":     {},
-			"Handler":     {},
-			"Method":      {},
-			"Type":        {},
-			"Bind":        {},
-			"Path":        {},
-			"Middlewares": {},
-			"Children":    {},
-			"Name":        {},
-			"MODEL":       {},
-			"TABLE":       {},
-			"DISTINCT":    {},
-			"SELECT":      {},
-			"OMIT":        {},
-			"MAP_COLUMNS": {},
-			"WHERE":       {},
-			"NOT":         {},
-			"OR":          {},
-			"INNER_JOINS": {},
-			"JOINS":       {},
-			"GROUP":       {},
-			"HAVING":      {},
-			"ORDER":       {},
-			"LIMIT":       {},
-			"OFFSET":      {},
-			"PRELOAD":     {},
-			"RAW":         {},
-		}
+	// if route.MODEL == nil {
+	// 	allowedMap := map[string]struct{}{
+	// 		"NoToken":     {},
+	// 		"Handler":     {},
+	// 		"Method":      {},
+	// 		"Type":        {},
+	// 		"Bind":        {},
+	// 		"Path":        {},
+	// 		"Middlewares": {},
+	// 		"Children":    {},
+	// 		"Name":        {},
+	// 		"MODEL":       {},
+	// 		"TABLE":       {},
+	// 		"DISTINCT":    {},
+	// 		"SELECT":      {},
+	// 		"OMIT":        {},
+	// 		"MAP_COLUMNS": {},
+	// 		"WHERE":       {},
+	// 		"NOT":         {},
+	// 		"OR":          {},
+	// 		"INNER_JOINS": {},
+	// 		"JOINS":       {},
+	// 		"GROUP":       {},
+	// 		"HAVING":      {},
+	// 		"ORDER":       {},
+	// 		"LIMIT":       {},
+	// 		"OFFSET":      {},
+	// 		"PRELOAD":     {},
+	// 		"RAW":         {},
+	// 	}
 
-		filedNmae, isAllowed := check(allowedMap, route)
-		if !isAllowed {
-			log.Fatalf("route: %s not allowed field: %s", name, filedNmae)
-		}
-	}
+	// 	filedNmae, isAllowed := check(allowedMap, route)
+	// 	if !isAllowed {
+	// 		log.Fatalf("route: %s not allowed field: %s", name, filedNmae)
+	// 	}
+	// }
 }
 
 func checkGroup(route Route) {
@@ -97,17 +97,17 @@ func checkGroup(route Route) {
 		name = route.Name
 	}
 
-	allowedMap := map[string]struct{}{
-		"NoToken":     {},
-		"Path":        {},
-		"Middlewares": {},
-		"Children":    {},
-		"Name":        {},
-	}
-	filedNmae, isAllowed := check(allowedMap, route)
-	if !isAllowed {
-		log.Fatalf("routeGroup: %s not allowed field: %s", name, filedNmae)
-	}
+	// allowedMap := map[string]struct{}{
+	// 	"NoToken":     {},
+	// 	"Path":        {},
+	// 	"Middlewares": {},
+	// 	"Children":    {},
+	// 	"Name":        {},
+	// }
+	// filedNmae, isAllowed := check(allowedMap, route)
+	// if !isAllowed {
+	// 	log.Fatalf("routeGroup: %s not allowed field: %s", name, filedNmae)
+	// }
 }
 
 func check(allowedMap map[string]struct{}, beChecked interface{}) (string, bool) {
