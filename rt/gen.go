@@ -63,6 +63,10 @@ func genDB(TX *gorm.DB, route *Route) {
 					}
 				}
 			}
+
+		case "CLAUSES":
+			TX.Clauses(route.CLAUSES)
+
 		case "NOT":
 			fmt.Printf("%s 是未测试功能, 请联系管理员", route.Type)
 			result := make(map[string]interface{}, 0)

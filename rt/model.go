@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type HendlerReq struct {
@@ -79,4 +80,5 @@ type Route struct {
 	PRELOAD     []string
 	TABLE       string
 	GROUP       string
+	CLAUSES     clause.OnConflict
 }
