@@ -10,19 +10,24 @@ import (
 	"gorm.io/gorm"
 )
 
-var TokenJWT string
 var GinGroup *gin.Engine
 var ORMDB *gorm.DB
 var Trans ut.Translator
+var Config *CfgRegist
 
-func Init(ginGroup *gin.Engine, ormDB *gorm.DB, JwtSecret string) {
-	TokenJWT = JwtSecret
+func Init(
+	ginGroup *gin.Engine,
+	ormDB *gorm.DB,
+	config *CfgRegist,
+) {
 	GinGroup = ginGroup
 	ORMDB = ormDB
-	setupValidatorTranslations()
+	Config = config
+
+	RegisterValidatorTranslations()
 }
 
-func setupValidatorTranslations() {
+func RegisterValidatorTranslations() {
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		zh := zh.New()
 		uni := ut.New(zh, zh)

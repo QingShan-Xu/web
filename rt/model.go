@@ -11,7 +11,7 @@ import (
 type HendlerReq struct {
 	C  *gin.Context
 	TX *gorm.DB
-	RT *Route
+	RT *Router
 }
 type Handler func(req *HendlerReq) *bm.Response
 
@@ -47,13 +47,12 @@ var METHOD = struct {
 	DELETE: "DELETE",
 }
 
-type Route struct {
+type Router struct {
 	// 通用 路由组
 	Name        string            // 路由名称
 	Path        string            // 路由路径
 	Middlewares []gin.HandlerFunc // 中间件
-	Children    []Route           // 子路由
-	NoToken     bool
+	Children    []Router          // 子路由
 
 	// 子路由
 	Type    string          // 简写方法 rt.Type.GET_LIST

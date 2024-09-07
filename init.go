@@ -8,5 +8,5 @@ import (
 
 type ConfigOptions struct {
 	DB     *gorm.DB
-	Router rt.Route
+	Router rt.Router
 }

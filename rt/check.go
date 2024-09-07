@@ -5,16 +5,14 @@ import (
 	"reflect"
 )
 
-func checkRoute(route Route) bool {
-	if len(route.Children) == 0 {
-		checkItem(route)
+func IsGroupRouter(router *Router) bool {
+	if len(router.Children) == 0 {
 		return false
 	}
-	checkGroup(route)
 	return true
 }
 
-func checkItem(route Route) {
+func checkItem(route Router) {
 	var name string
 	if route.Path != "" {
 		name = route.Path
@@ -88,7 +86,7 @@ func checkItem(route Route) {
 	// }
 }
 
-func checkGroup(route Route) {
+func checkGroup(route Router) {
 	// var name string
 	// if route.Path != "" {
 	// 	name = route.Path

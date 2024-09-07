@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func genDB(TX *gorm.DB, route *Route) {
+func genDB(TX *gorm.DB, route *Router) {
 
 	val := reflect.ValueOf(route).Elem()
 	tpe := reflect.TypeOf(route).Elem()
@@ -125,7 +125,7 @@ func genDB(TX *gorm.DB, route *Route) {
 	}
 }
 
-func genType(TX *gorm.DB, route *Route) *bm.Response {
+func genType(TX *gorm.DB, route *Router) *bm.Response {
 	noVModelVal, _ := createDataInstance(route.MODEL, false)
 	model := noVModelVal.Interface()
 
