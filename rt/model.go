@@ -13,7 +13,7 @@ type HendlerReq struct {
 	TX *gorm.DB
 	RT *Router
 }
-type Handler func(req *HendlerReq) *bm.Response
+type Handler func(req *HendlerReq) *bm.Res
 
 var TYPE = struct {
 	GET_LIST    string
@@ -62,16 +62,16 @@ type Router struct {
 
 	// 数据库: 链式条件
 	MODEL       interface{}
-	SELECT      []string          // []string{"name"}
-	OMIT        []string          // []string{"name"}
-	DISTINCT    []string          // []string{"name"}
-	WHERE       map[string]string // map[string]string{"name = ?": "Name"}
-	NOT         map[string]string // map[string]string{"name = ?": "Name"}
-	OR          map[string]string // map[string]string{"name = ?": "Name"}
-	HAVING      map[string]string // map[string]string{"name = ?": "Name"}
-	MAP_COLUMNS map[string]string // map[string]string{"name": "姓名"}
-	RAW         map[string]string // map[string]string{"SELECT id, name, age FROM users WHERE name = ?": "Name"}
-	ORDER       map[string]string // true升序, false降序
+	SELECT      []string               // []string{"name"}
+	OMIT        []string               // []string{"name"}
+	DISTINCT    []string               // []string{"name"}
+	WHERE       map[string]interface{} // map[string]string{"name = ?": "Name"}
+	NOT         map[string]string      // map[string]string{"name = ?": "Name"}
+	OR          map[string]string      // map[string]string{"name = ?": "Name"}
+	HAVING      map[string]string      // map[string]string{"name = ?": "Name"}
+	MAP_COLUMNS map[string]string      // map[string]string{"name": "姓名"}
+	RAW         map[string]string      // map[string]string{"SELECT id, name, age FROM users WHERE name = ?": "Name"}
+	ORDER       map[string]string      // true升序, false降序
 	LIMIT       int
 	OFFSET      int
 	JOINS       string

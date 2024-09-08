@@ -10,13 +10,13 @@ import (
 	"gorm.io/gorm"
 )
 
-var GinGroup *gin.Engine
+var GinGroup *gin.RouterGroup
 var ORMDB *gorm.DB
 var Trans ut.Translator
 var Config *CfgRegist
 
 func Init(
-	ginGroup *gin.Engine,
+	ginGroup *gin.RouterGroup,
 	ormDB *gorm.DB,
 	config *CfgRegist,
 ) {

@@ -16,7 +16,7 @@ type Res struct {
 	fileName string
 }
 
-func (response *Res) SucJson(data interface{}, msg ...any) Res {
+func (response *Res) SucJson(data interface{}, msg ...any) *Res {
 
 	if msg == nil {
 		msg = append(msg, "操作成功")
@@ -26,10 +26,10 @@ func (response *Res) SucJson(data interface{}, msg ...any) Res {
 	response.Data = data
 	response.Msg = fmt.Sprint(msg...)
 
-	return *response
+	return response
 }
 
-func (response *Res) SucFile(filePath string, fileName string, msg ...any) Res {
+func (response *Res) SucFile(filePath string, fileName string, msg ...any) *Res {
 	if msg == nil {
 		msg = append(msg, "下载成功")
 	}
@@ -39,10 +39,10 @@ func (response *Res) SucFile(filePath string, fileName string, msg ...any) Res {
 	response.fileName = fileName
 	response.Msg = fmt.Sprint(msg...)
 
-	return *response
+	return response
 }
 
-func (response *Res) SucList(data ResList, msg ...any) Res {
+func (response *Res) SucList(data ResList, msg ...any) *Res {
 	if msg == nil {
 		msg = append(msg, "下载成功")
 	}
@@ -51,21 +51,21 @@ func (response *Res) SucList(data ResList, msg ...any) Res {
 	response.Data = data
 	response.Msg = fmt.Sprint(msg...)
 
-	return *response
+	return response
 }
 
-func (response *Res) FailBackend(msg ...any) Res {
+func (response *Res) FailBackend(msg ...any) *Res {
 	response.Code = 500
 	response.Msg = fmt.Sprint(msg...)
 
-	return *response
+	return response
 }
 
-func (response *Res) FailFront(msg ...any) Res {
+func (response *Res) FailFront(msg ...any) *Res {
 	response.Code = 400
 	response.Msg = fmt.Sprint(msg...)
 
-	return *response
+	return response
 }
 
 func (response *Res) Send(c *gin.Context) {

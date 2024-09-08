@@ -1,12 +1,13 @@
-package xjh
+// package xjh
 
-import (
-	"github.com/QingShan-Xu/xjh/rt"
+// import (
+// 	"github.com/QingShan-Xu/xjh/rt"
 
-	"gorm.io/gorm"
-)
+// 	"gorm.io/gorm"
+// )
 
-type ConfigOptions struct {
-	DB     *gorm.DB
-	Router rt.Router
-}
+//	type ConfigOptions struct {
+//		DB     *gorm.DB
+//		Router rt.Router
+//	}
+package main

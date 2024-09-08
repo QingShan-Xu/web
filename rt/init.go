@@ -5,6 +5,5 @@ import (
 )
 
 func Init(route *Router) {
-	rootGroup := cf.GinGroup.Group("")
-	register(rootGroup, route)
+	register(cf.GinGroup, route)
 }

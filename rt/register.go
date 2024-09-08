@@ -1,6 +1,10 @@
 package rt
 
-import "github.com/gin-gonic/gin"
+import (
+	"fmt"
+
+	"github.com/gin-gonic/gin"
+)
 
 func register(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 	isGRoup := IsGroupRouter(regRouter)
@@ -30,11 +34,20 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 	} else {
 		name = regRouter.Path
 	}
+	pGroupRouter.Handle(
+		regRouter.Method,
+		regRouter.Path,
+		reqBindMiddleware(regRouter, name),
+		reqPreDBMiddleware(regRouter, name),
+		func(ctx *gin.Context) {
+			bind := ctx.MustGet("reqBind_")
+			fmt.Printf("%+v", bind)
+			ctx.JSON(200, gin.H{"data": bind})
+		},
+	)
 
-	router := pGroupRouter.Handle(regRouter.Method, regRouter.Path)
-
-	if regRouter.Bind != nil {
-		bindVal := getInstanceVal(regRouter.Bind)
-		router.Use(bindReqMiddlewares(bindVal))
-	}
+	// if regRouter.Bind != nil {
+	// 	bindVal := getInstanceVal(regRouter.Bind)
+	// 	router.Use(bindReqMiddlewares(bindVal, name))
+	// }
 }
