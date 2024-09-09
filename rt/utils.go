@@ -36,7 +36,7 @@ func getInstanceVal(anyData interface{}) reflect.Value {
 // 	return true
 // }
 
-func includes[T comparable](slice []T, item T) bool {
+func isIncludes[T comparable](slice []T, item T) bool {
 	for _, v := range slice {
 		if v == item {
 			return true
@@ -77,4 +77,8 @@ func struct2map(s interface{}) (data map[string]interface{}) {
 		data[fName] = fValue
 	}
 	return
+}
+
+func isGroupRouter(router *Router) bool {
+	return len(router.Children) != 0
 }

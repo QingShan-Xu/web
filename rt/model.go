@@ -5,36 +5,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
-type HendlerReq struct {
-	C  *gin.Context
-	TX *gorm.DB
-	RT *Router
-}
-type Handler func(req *HendlerReq) *bm.Res
-
-var TYPE = struct {
-	GET_LIST    string
-	GET_ONE     string
-	UPDATE_ONE  string
-	UPDATE_LIST string
-	CREATE_ONE  string
-	CREATE_LIST string
-	DELETE      string
-	DELETE_LIST string
-}{
-	GET_LIST:    "GET_LIST",
-	GET_ONE:     "GET_ONE",
-	UPDATE_ONE:  "UPDATE",
-	UPDATE_LIST: "UPDATE_LIST",
-	CREATE_ONE:  "CREATE",
-	CREATE_LIST: "CREATE_LIST",
-	DELETE:      "DELETE",
-	DELETE_LIST: "DELETE_LIST",
-}
-
+// METHOD 是一个包含 HTTP 方法常量的结构体，用于在代码中统一引用 HTTP 方法名。
+//
+// 定义了常见的四种 HTTP 方法：GET、POST、PUT、DELETE，
 var METHOD = struct {
 	GET    string
 	POST   string
@@ -47,37 +22,52 @@ var METHOD = struct {
 	DELETE: "DELETE",
 }
 
+// Finisher 是一个包含常量的结构体，用于定义数据库操作的结尾句类型。
+//
+// 示例: Finisher.First
+//
+//	result := tx.Find(&data) // tx := 在 Router 中定义的一系列 gorm 的 Chain Methods
+//	if result.Error != nil { // 后端错误
+//		new(bm.Res).FailBackend(result.Error).Send(ctx)
+//		ctx.Abort()
+//		return
+//	}
+//	if result.RowsAffected == 0 { // 前端错误
+//		new(bm.Res).FailFront("数据不存在").Send(ctx)
+//		ctx.Abort()
+//		return
+//	}
+//	new(bm.Res).SucJson(data).Send(ctx) // 返回数据
+//	ctx.Abort() // 阻止后续 Handler, 即阻止 Router 中的 自定义Handler
+var Finisher = struct {
+	First string
+}{
+	First: "First",
+}
+
 type Router struct {
-	// 通用 路由组
-	Name        string            // 路由名称
-	Path        string            // 路由路径
-	Middlewares []gin.HandlerFunc // 中间件
-	Children    []Router          // 子路由
+	// 通用 路由组参数
+
+	// 路由名称
+	Name string
+	// 路由路径 层级嵌套, 不需要手动添加 "/"
+	Path string
+	// 中间件 符合gin的中间件
+	Middlewares []gin.HandlerFunc
+	// 子路由
+	Children []Router
 
 	// 子路由
-	Type    string          // 简写方法 rt.Type.GET_LIST
-	Method  string          // 请求方法 rt.Method.GET
-	Handler gin.HandlerFunc // 处理函数
-	Bind    interface{}     // 请求参数 struct{ Name string `json:"name" form:"name"` }
+	Method  string      // 请求方法 rt.Method.GET
+	Handler Handler     // 处理函数
+	Bind    interface{} // 请求参数 struct{ Name string `json:"name" form:"name"` }
 
 	// 数据库: 链式条件
-	MODEL       interface{}
-	SELECT      []string               // []string{"name"}
-	OMIT        []string               // []string{"name"}
-	DISTINCT    []string               // []string{"name"}
-	WHERE       map[string]interface{} // map[string]string{"name = ?": "Name"}
-	NOT         map[string]string      // map[string]string{"name = ?": "Name"}
-	OR          map[string]string      // map[string]string{"name = ?": "Name"}
-	HAVING      map[string]string      // map[string]string{"name = ?": "Name"}
-	MAP_COLUMNS map[string]string      // map[string]string{"name": "姓名"}
-	RAW         map[string]string      // map[string]string{"SELECT id, name, age FROM users WHERE name = ?": "Name"}
-	ORDER       map[string]string      // true升序, false降序
-	LIMIT       int
-	OFFSET      int
-	JOINS       string
-	INNER_JOINS string
-	PRELOAD     []string
-	TABLE       string
-	GROUP       string
-	CLAUSES     clause.OnConflict
+	MODEL interface{}
+	WHERE map[string]string
+
+	// 数据库: 结尾句
+	Finisher string
 }
+
+type Handler func(C *gin.Context, TX *gorm.DB) (res *bm.Res)
