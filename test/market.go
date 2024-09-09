@@ -5,14 +5,14 @@ import "github.com/QingShan-Xu/xjh/bm"
 var D database
 
 type database struct {
-	Pet Market
+	Pet Pet
 }
 
-type Market struct {
+type Pet struct {
 	bm.Model
 
-	Title string
-	Value string
+	Name   string `json:"name" binding:"required"`
+	Status string `json:"status" binding:"required"`
 }
 
 var API api

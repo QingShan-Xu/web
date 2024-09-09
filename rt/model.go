@@ -23,26 +23,27 @@ var METHOD = struct {
 }
 
 // Finisher 是一个包含常量的结构体，用于定义数据库操作的结尾句类型。
-//
-// 示例: Finisher.First
-//
-//	result := tx.Find(&data) // tx := 在 Router 中定义的一系列 gorm 的 Chain Methods
-//	if result.Error != nil { // 后端错误
-//		new(bm.Res).FailBackend(result.Error).Send(ctx)
-//		ctx.Abort()
-//		return
-//	}
-//	if result.RowsAffected == 0 { // 前端错误
-//		new(bm.Res).FailFront("数据不存在").Send(ctx)
-//		ctx.Abort()
-//		return
-//	}
-//	new(bm.Res).SucJson(data).Send(ctx) // 返回数据
-//	ctx.Abort() // 阻止后续 Handler, 即阻止 Router 中的 自定义Handler
 var Finisher = struct {
-	First string
+	// 示例: Finisher.First
+	//
+	//	result := tx.Find(&data) // tx := 在 Router 中定义的一系列 gorm 的 Chain Methods
+	//	if result.Error != nil { // 后端错误
+	//		new(bm.Res).FailBackend(result.Error).Send(ctx)
+	//		ctx.Abort()
+	//		return
+	//	}
+	//	if result.RowsAffected == 0 { // 前端错误
+	//		new(bm.Res).FailFront("数据不存在").Send(ctx)
+	//		ctx.Abort()
+	//		return
+	//	}
+	//	new(bm.Res).SucJson(data).Send(ctx) // 返回数据
+	//	ctx.Abort() // 阻止后续 Handler, 即阻止 Router 中的 自定义Handler
+	First  string
+	Create string
 }{
-	First: "First",
+	First:  "First",
+	Create: "Create",
 }
 
 type Router struct {

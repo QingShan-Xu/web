@@ -3,6 +3,7 @@ package rt
 import (
 	"log"
 
+	"github.com/QingShan-Xu/xjh/cf"
 	"github.com/QingShan-Xu/xjh/rt/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -32,7 +33,7 @@ import (
 //	})
 func register(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 	// 检查 regRouter 是否表示一个路由组。
-	isGRoup := isGroupRouter(regRouter)
+	isGRoup := len(regRouter.Children) > 0
 
 	if isGRoup {
 		// 如果是路由组，则创建一个新的子路由组。
@@ -96,7 +97,7 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 
 	// 检查路由组、路由结构体和方法是否有效，如果无效则记录日志并跳过路由注册。
 	if pGroupRouter == nil || regRouter == nil || regRouter.Method == "" {
-		log.Printf("%s: 没有 Path 或 Method, 已跳过路由注册", name)
+		log.Printf("%s: 没有 Method, 已跳过路由注册", name)
 		return
 	}
 
@@ -116,6 +117,15 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 			regRouter.MODEL,
 			name,
 		))
+	} else {
+		middlewareFuncs = append(middlewareFuncs, func(ctx *gin.Context) {
+			db := cf.ORMDB
+			if regRouter.MODEL != nil {
+				db = db.Model(regRouter.MODEL)
+			}
+			ctx.Set("reqTX_", db)
+			ctx.Next()
+		})
 	}
 
 	// 如果有终结器且没有处理程序，添加请求终结器中间件。

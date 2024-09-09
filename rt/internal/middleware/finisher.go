@@ -17,7 +17,7 @@ func ReqFinisherMiddleware(
 ) gin.HandlerFunc {
 
 	if MODEL == nil {
-		log.Fatalf("%s: MODEL 在使用 Finisher 时不能为空", name)
+		log.Fatalf("%s: 在使用 Finisher 时 MODEL 不能为空", name)
 	}
 
 	if Finisher == "First" {
@@ -39,6 +39,23 @@ func ReqFinisherMiddleware(
 			}
 
 			new(bm.Res).SucJson(data).Send(ctx)
+			ctx.Abort()
+		}
+	}
+
+	if Finisher == "Create" {
+		return func(ctx *gin.Context) {
+			tx := ctx.MustGet("reqTX_").(*gorm.DB)
+			bind := ctx.MustGet("reqBind_")
+
+			result := tx.Create(bind)
+			if result.Error != nil {
+				new(bm.Res).FailBackend(result.Error).Send(ctx)
+				ctx.Abort()
+				return
+			}
+
+			new(bm.Res).SucJson(bind).Send(ctx)
 			ctx.Abort()
 		}
 	}
