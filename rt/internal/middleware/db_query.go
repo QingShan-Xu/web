@@ -28,6 +28,8 @@ func ReqPreDBMiddleware(
 		log.Fatalf("%s: MODEL 不能为空", name)
 	}
 
+	newMODEL := reflect.New(utils.GetInstanceVal(MODEL).Type()).Interface()
+
 	bindVal := utils.GetInstanceVal(Bind)
 	if bindVal.Type().Kind() != reflect.Struct {
 		log.Fatalf("%s: Bind 必须为结构体", name)
@@ -60,7 +62,7 @@ func ReqPreDBMiddleware(
 		reqBind := struct2map(ctx.MustGet("reqBind_"))
 		var needQuery []Query
 
-		db := cf.ORMDB.Model(MODEL)
+		db := cf.ORMDB.Model(newMODEL)
 
 		for _, query := range QueryList {
 			if queryData, ok := reqBind[query.Data.(string)]; ok {
@@ -91,6 +93,7 @@ func ReqPreDBMiddleware(
 			}
 		}
 
+		ctx.Set("reqModel_", newMODEL)
 		ctx.Set("reqTX_", db.Session(&gorm.Session{}))
 		ctx.Next()
 	}

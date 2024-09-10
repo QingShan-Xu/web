@@ -5,27 +5,23 @@ import (
 	"reflect"
 
 	"github.com/QingShan-Xu/xjh/bm"
-	"github.com/QingShan-Xu/xjh/rt/internal/utils"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func ReqFinisherMiddleware(
+	BeforeFinisher func(bind interface{}) interface{},
 	Finisher string,
-	MODEL interface{},
 	name string,
 ) gin.HandlerFunc {
-
-	if MODEL == nil {
-		log.Fatalf("%s: 在使用 Finisher 时 MODEL 不能为空", name)
-	}
 
 	if Finisher == "First" {
 		return func(ctx *gin.Context) {
 			tx := ctx.MustGet("reqTX_").(*gorm.DB)
-			data := reflect.New(utils.GetInstanceVal(MODEL).Type()).Interface()
+			model := ctx.MustGet("reqModel_")
 
-			result := tx.Find(&data)
+			result := tx.Find(model)
 			if result.Error != nil {
 				new(bm.Res).FailBackend(result.Error).Send(ctx)
 				ctx.Abort()
@@ -38,15 +34,32 @@ func ReqFinisherMiddleware(
 				return
 			}
 
-			new(bm.Res).SucJson(data).Send(ctx)
+			new(bm.Res).SucJson(model).Send(ctx)
 			ctx.Abort()
 		}
 	}
 
 	if Finisher == "Create" {
 		return func(ctx *gin.Context) {
+			var bind interface{}
+			reqBind := ctx.MustGet("reqBind_")
+			reqModel := ctx.MustGet("reqModel_")
+
 			tx := ctx.MustGet("reqTX_").(*gorm.DB)
-			bind := ctx.MustGet("reqBind_")
+			if BeforeFinisher != nil {
+				beforeBind := BeforeFinisher(reqBind)
+
+				if reflect.TypeOf(beforeBind).Kind() != reflect.Pointer {
+					beforeBind = &beforeBind
+				}
+				if reflect.TypeOf(beforeBind).Kind() != reflect.TypeOf(reqModel).Kind() {
+					new(bm.Res).FailBackend(name, ": 创建对象 与 数据结构不一致").Send(ctx)
+					ctx.Abort()
+					return
+				}
+			} else {
+				bind = reqBind
+			}
 
 			result := tx.Create(bind)
 			if result.Error != nil {
@@ -56,6 +69,47 @@ func ReqFinisherMiddleware(
 			}
 
 			new(bm.Res).SucJson(bind).Send(ctx)
+			ctx.Abort()
+		}
+	}
+
+	if Finisher == "Update" {
+		return func(ctx *gin.Context) {
+			var bind interface{}
+			reqBind := ctx.MustGet("reqBind_")
+			tx := ctx.MustGet("reqTX_").(*gorm.DB)
+			if BeforeFinisher != nil {
+				beforBind := BeforeFinisher(reqBind)
+				bind = beforBind
+			} else {
+				bind = reqBind
+			}
+			// mysql不支持Returning
+			result := tx.Clauses(clause.Returning{}).Updates(bind)
+			if result.Error != nil {
+				new(bm.Res).FailBackend(result.Error).Send(ctx)
+				ctx.Abort()
+				return
+			}
+
+			new(bm.Res).SucJson(nil).Send(ctx)
+			ctx.Abort()
+		}
+	}
+
+	if Finisher == "Delete" {
+		return func(ctx *gin.Context) {
+			tx := ctx.MustGet("reqTX_").(*gorm.DB)
+			reqModel := ctx.MustGet("reqModel_")
+
+			result := tx.Delete(reqModel)
+			if result.Error != nil {
+				new(bm.Res).FailBackend(result.Error).Send(ctx)
+				ctx.Abort()
+				return
+			}
+
+			new(bm.Res).SucJson(nil).Send(ctx)
 			ctx.Abort()
 		}
 	}

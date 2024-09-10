@@ -2,9 +2,11 @@ package rt
 
 import (
 	"log"
+	"reflect"
 
 	"github.com/QingShan-Xu/xjh/cf"
 	"github.com/QingShan-Xu/xjh/rt/internal/middleware"
+	"github.com/QingShan-Xu/xjh/rt/internal/utils"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -101,6 +103,12 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 		return
 	}
 
+	if regRouter.MODEL != nil {
+		if err := cf.ORMDB.AutoMigrate(regRouter.MODEL); err != nil {
+			log.Fatalf("%s: 数据库自动迁移失败: %v", name, err)
+		}
+	}
+
 	// 初始化中间件函数列表，用于存储所有需要应用的中间件。
 	middlewareFuncs := make([]gin.HandlerFunc, 0)
 
@@ -121,22 +129,32 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 		middlewareFuncs = append(middlewareFuncs, func(ctx *gin.Context) {
 			db := cf.ORMDB
 			if regRouter.MODEL != nil {
-				db = db.Model(regRouter.MODEL)
+				newModel := reflect.New(utils.GetInstanceVal(regRouter.MODEL).Type()).Interface()
+				db = db.Model(newModel)
+				ctx.Set("reqModel_", newModel)
 			}
 			ctx.Set("reqTX_", db)
 			ctx.Next()
 		})
 	}
 
+	if regRouter.Finisher != "" && regRouter.Handler != nil {
+		log.Fatalf("%s: 不能同时使用 Handler 和 Finisher", name)
+	}
+
+	if regRouter.Finisher != "" && regRouter.MODEL == nil {
+		log.Fatalf("%s: 在使用 Finisher 时 MODEL 不能为空", name)
+	}
+
+	if regRouter.Finisher == "Update" && regRouter.WHERE == nil {
+		log.Fatalf("%s: 在使用 Update 时 WHERE 为必填项", name)
+	}
+
 	// 如果有终结器且没有处理程序，添加请求终结器中间件。
 	if regRouter.Finisher != "" {
-		if regRouter.Handler != nil {
-			log.Fatalf("%s: 不能同时使用 Handler 和 Finisher", name)
-		}
-
 		middlewareFuncs = append(middlewareFuncs, middleware.ReqFinisherMiddleware(
+			regRouter.BeforeFinisher,
 			regRouter.Finisher,
-			regRouter.MODEL,
 			name,
 		))
 	}
@@ -150,9 +168,10 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 	if regRouter.Handler != nil {
 		middlewareFuncs = append(middlewareFuncs, func(ctx *gin.Context) {
 			// 从上下文中获取数据库事务对象。
-			TX := ctx.MustGet("reqTX_").(*gorm.DB)
+			TX, _ := ctx.MustGet("reqTX_").(*gorm.DB)
+			Bind, _ := ctx.Get("reqBind_")
 			// 执行处理程序并获取响应。
-			res := regRouter.Handler(ctx, TX)
+			res := regRouter.Handler(ctx, TX, Bind)
 			// 如果响应已经写入，直接返回。
 			if ctx.Writer.Written() {
 				return
