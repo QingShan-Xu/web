@@ -74,9 +74,9 @@ func ReqPreDBMiddleware(
 		}
 	}
 
-	if TYPE == "CREATE_ONE" || TYPE == "UPDATE_ONE" || TYPE == "DELETE_ONE" {
+	/* 	if TYPE == "CREATE_ONE" || TYPE == "UPDATE_ONE" || TYPE == "DELETE_ONE" {
 		log.Fatal("还没做")
-	}
+	} */
 
 	return func(ctx *gin.Context) {
 
@@ -100,8 +100,10 @@ func ReqPreDBMiddleware(
 
 		if len(ORDER) > 0 {
 			for data, query := range ORDER {
-				if bindData, ok := reqBindMap[data]; ok {
-					db.Order(fmt.Sprintf("%s %s", bindData, query))
+				bindData, bindDataOk := reqBindMap[data]
+				bindQuery, bindQueryOk := reqBindMap[query]
+				if bindDataOk && bindQueryOk {
+					db.Order(fmt.Sprintf("%s %s", bindData, bindQuery))
 				}
 			}
 		}
