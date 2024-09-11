@@ -20,15 +20,16 @@ func ToSnakeCase(str string) string {
 	var result []rune
 	for i, r := range str {
 		if unicode.IsUpper(r) {
-			if i > 0 && unicode.IsLower(rune(str[i-1])) {
-				result = append(result, '_')
+			// 如果不是字符串开始并且前一个字符不是下划线
+			if i > 0 && !(unicode.IsUpper(rune(str[i-1]))) {
+				result = append(result, '_') // 添加下划线
 			}
-			result = append(result, unicode.ToLower(r))
+			result = append(result, unicode.ToLower(r)) // 将大写字母转换为小写并添加到结果中
 		} else {
-			result = append(result, r)
+			result = append(result, r) // 如果是小写字母或其他字符，直接添加到结果中
 		}
 	}
-	return string(result)
+	return string(result) // 将 rune 数组转换为字符串并返回
 }
 
 func IsIncludes[T comparable](slice []T, item T) bool {
