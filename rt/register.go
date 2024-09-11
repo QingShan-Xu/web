@@ -112,11 +112,13 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 
 	// 如果有绑定参数，添加请求绑定中间件。
 	if regRouter.Bind != nil {
-		middlewareFuncs = append(middlewareFuncs, middleware.ReqBindMiddleware(regRouter.Bind, name))
+		middlewareFuncs = append(middlewareFuncs, middleware.ReqBindMiddleware(regRouter.Bind, regRouter.InitValue, name))
 	}
 
 	middlewareFuncs = append(middlewareFuncs, middleware.ReqPreDBMiddleware(
 		regRouter.WHERE,
+		regRouter.ORDER,
+
 		regRouter.Bind,
 		regRouter.Type,
 		regRouter.MODEL,
@@ -125,7 +127,7 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 
 	if regRouter.Type != "" {
 		middlewareFuncs = append(middlewareFuncs, middleware.ReqTypeMiddleware(
-			regRouter.BeforeFinisher,
+			regRouter.BeforeInset,
 			regRouter.Type,
 			name,
 		))

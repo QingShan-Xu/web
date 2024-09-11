@@ -13,6 +13,8 @@ import (
 
 func ReqPreDBMiddleware(
 	WHERE map[string]string,
+	ORDER map[string]string,
+
 	Bind interface{},
 	TYPE string,
 	MODEL interface{},
@@ -43,6 +45,14 @@ func ReqPreDBMiddleware(
 		}
 	}
 
+	if len(ORDER) > 0 {
+		for data, query := range ORDER {
+			if query != "desc" && query != "asc" {
+				log.Fatalf("%s: ORDER 语句: %s 必须为 desc 或 asc", name, data)
+			}
+		}
+	}
+
 	if TYPE == "GET_LIST" {
 		dataPage, existsPage := bindFieldNames["Pagination.PageSize"]
 		if !existsPage {
@@ -61,6 +71,10 @@ func ReqPreDBMiddleware(
 		}
 	}
 
+	if TYPE == "CREATE_ONE" || TYPE == "UPDATE_ONE" || TYPE == "DELETE_ONE" {
+		log.Fatal("还没做")
+	}
+
 	return func(ctx *gin.Context) {
 
 		reqBindMap := utils.MapFlatten(utils.Struct2map(ctx.MustGet("reqBind_"), false))
@@ -77,6 +91,14 @@ func ReqPreDBMiddleware(
 			for query, data := range WHERE {
 				if bindData, ok := reqBindMap[data]; ok {
 					db.Where(query, bindData)
+				}
+			}
+		}
+
+		if len(ORDER) > 0 {
+			for data, query := range ORDER {
+				if bindData, ok := reqBindMap[data]; ok {
+					db.Order(fmt.Sprintf("%s %s", bindData, query))
 				}
 			}
 		}

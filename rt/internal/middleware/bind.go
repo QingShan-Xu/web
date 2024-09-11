@@ -15,11 +15,23 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func ReqBindMiddleware(Bind interface{}, name string) gin.HandlerFunc {
+func ReqBindMiddleware(Bind interface{}, InitValue map[string]interface{}, name string) gin.HandlerFunc {
 	bindVal := utils.GetInstanceVal(Bind)
 
 	if bindVal.Kind() != reflect.Struct {
 		log.Fatalf("%s: Bind 必须是 struct 类型", name)
+	}
+
+	for key, value := range InitValue {
+		field := bindVal.FieldByName(key)
+		if field.IsValid() && field.CanSet() {
+			val := reflect.ValueOf(value)
+			if val.Type().AssignableTo(field.Type()) {
+				field.Set(val)
+			} else {
+				log.Fatalf("%s: InitValue 中的 %s 类型 与 Bind中不匹配", name, key)
+			}
+		}
 	}
 
 	return func(c *gin.Context) {

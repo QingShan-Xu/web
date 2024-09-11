@@ -40,7 +40,7 @@ var router = rt.Router{
 		// 	MODEL:  test.D.Pet,
 		// 	Method: "PUT",
 		// 	WHERE:  map[string]string{"id": "ID"},
-		// 	BeforeFinisher: func(bind interface{}) interface{} {
+		// 	BeforeInset: func(bind interface{}) interface{} {
 		// 		newBind := bind.(*test.ReqUpdatePet)
 		// 		var pet test.Pet
 		// 		pet.Name = newBind.Name

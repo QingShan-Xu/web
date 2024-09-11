@@ -62,10 +62,12 @@ type Router struct {
 	// 数据库: 链式条件
 	MODEL interface{}
 	WHERE map[string]string
+	ORDER map[string]string
 
 	Type string
 
-	BeforeFinisher func(bind interface{}) interface{}
+	InitValue   map[string]interface{}
+	BeforeInset func(bind interface{}) interface{}
 }
 
 type Handler func(C *gin.Context, TX *gorm.DB, bind interface{}) (res *bm.Res)

@@ -12,7 +12,7 @@ import (
 )
 
 func ReqTypeMiddleware(
-	BeforeFinisher func(bind interface{}) interface{},
+	BeforeInset func(bind interface{}) interface{},
 	Type string,
 	name string,
 ) gin.HandlerFunc {
@@ -78,8 +78,8 @@ func ReqTypeMiddleware(
 			reqModel := ctx.MustGet("reqModel_")
 
 			tx := ctx.MustGet("reqTX_").(*gorm.DB)
-			if BeforeFinisher != nil {
-				beforeBind := BeforeFinisher(reqBind)
+			if BeforeInset != nil {
+				beforeBind := BeforeInset(reqBind)
 
 				if reflect.TypeOf(beforeBind).Kind() != reflect.Pointer {
 					beforeBind = &beforeBind
@@ -110,8 +110,8 @@ func ReqTypeMiddleware(
 			var bind interface{}
 			reqBind := ctx.MustGet("reqBind_")
 			tx := ctx.MustGet("reqTX_").(*gorm.DB)
-			if BeforeFinisher != nil {
-				beforBind := BeforeFinisher(reqBind)
+			if BeforeInset != nil {
+				beforBind := BeforeInset(reqBind)
 				bind = beforBind
 			} else {
 				bind = reqBind
