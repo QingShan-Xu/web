@@ -76,28 +76,50 @@ func Struct2map(s interface{}, keepZeroValues bool) map[string]interface{} {
 	for i := 0; i < val.NumField(); i++ {
 		field := val.Field(i)
 		fieldName := val.Type().Field(i).Name
-		fieldValue := field.Interface()
 
-		// 检查字段是否是结构体
-		if field.Kind() == reflect.Struct {
-			// 递归处理嵌套结构体
-			innerMap := Struct2map(fieldValue, keepZeroValues)
-			if len(innerMap) > 0 {
-				data[fieldName] = innerMap
+		// 只处理导出字段
+		if field.CanInterface() {
+			fieldValue := field.Interface()
+
+			// 检查字段是否是结构体
+			if field.Kind() == reflect.Struct {
+				// 递归处理嵌套结构体
+				innerMap := Struct2map(fieldValue, keepZeroValues)
+				if len(innerMap) > 0 {
+					data[fieldName] = innerMap
+				}
+			} else if field.Kind() == reflect.Bool || keepZeroValues || !isZero(field) {
+				// 保留布尔值或根据参数决定是否保留零值
+				data[fieldName] = fieldValue
 			}
-		} else if field.Kind() == reflect.Bool || keepZeroValues || !isZero(field) {
-			// 保留布尔值或根据参数决定是否保留零值
-			data[fieldName] = fieldValue
 		}
 	}
 	return data
 }
 
-func isZero(val reflect.Value) bool {
-	zero := reflect.Zero(val.Type()).Interface()
-	return reflect.DeepEqual(val.Interface(), zero)
+// 判断是否为零值
+func isZero(v reflect.Value) bool {
+	// 根据类型判断是否为零值
+	switch v.Kind() {
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	case reflect.Complex64, reflect.Complex128:
+		return v.Complex() == 0
+	case reflect.Array, reflect.Slice:
+		return v.Len() == 0
+	case reflect.Map:
+		return v.IsNil() || v.Len() == 0
+	case reflect.String:
+		return v.String() == ""
+	}
+	return false
 }
-
 func MapFlatten(m map[string]interface{}) map[string]interface{} {
 	flatMap := make(map[string]interface{})
 	flatten("", m, flatMap)

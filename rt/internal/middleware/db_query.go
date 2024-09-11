@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 
@@ -28,7 +29,7 @@ func ReqPreDBMiddleware(
 	if bindVal.Type().Kind() != reflect.Struct {
 		log.Fatalf("%s: Bind 必须为结构体", name)
 	}
-
+	fmt.Printf("%+v", Bind)
 	bindFieldNames := utils.MapFlatten(utils.Struct2map(Bind, true))
 
 	if len(WHERE) > 0 {
@@ -61,6 +62,7 @@ func ReqPreDBMiddleware(
 	}
 
 	return func(ctx *gin.Context) {
+
 		reqBindMap := utils.MapFlatten(utils.Struct2map(ctx.MustGet("reqBind_"), false))
 
 		db := cf.ORMDB.Model(newMODEL)

@@ -14,21 +14,14 @@ var router = rt.Router{
 	Name: "宠物",
 	Path: "pet",
 	Children: []rt.Router{
-		// {
-		// 	Name:   "新建",
-		// 	Path:   ":user_id",
-		// 	Bind:   test.API.ReqCreatePet,
-		// 	MODEL:  test.D.Pet,
-		// 	Method: "POST",
-		// 	BeforeFinisher: func(bind interface{}) interface{} {
-		// 		newBind := bind.(*test.ReqCreatePet)
-		// 		var pet test.Pet
-		// 		pet.Name = newBind.Name
-		// 		pet.Status = newBind.Status
-		// 		return pet
-		// 	},
-		// 	Finisher: rt.Finisher.Create,
-		// },
+		{
+			Name:   "新建",
+			Path:   "",
+			Bind:   test.D.Pet,
+			MODEL:  test.D.Pet,
+			Method: "POST",
+			Type:   rt.TYPE.CREATE_ONE,
+		},
 		// {
 		// 	Name: "查询",
 		// 	Path: ":id",
