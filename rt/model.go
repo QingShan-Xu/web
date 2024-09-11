@@ -66,7 +66,6 @@ type Router struct {
 
 	Type string
 
-	InitValue   map[string]interface{}
 	BeforeInset func(bind interface{}) interface{}
 }
 

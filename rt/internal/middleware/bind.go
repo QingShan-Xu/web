@@ -15,40 +15,33 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func ReqBindMiddleware(Bind interface{}, InitValue map[string]interface{}, name string) gin.HandlerFunc {
+func ReqBindMiddleware(Bind interface{}, name string) gin.HandlerFunc {
 	bindVal := utils.GetInstanceVal(Bind)
 
 	if bindVal.Kind() != reflect.Struct {
 		log.Fatalf("%s: Bind 必须是 struct 类型", name)
 	}
 
-	for key, value := range InitValue {
-		field := bindVal.FieldByName(key)
-		if field.IsValid() && field.CanSet() {
-			val := reflect.ValueOf(value)
-			if val.Type().AssignableTo(field.Type()) {
-				field.Set(val)
-			} else {
-				log.Fatalf("%s: InitValue 中的 %s 类型 与 Bind中不匹配", name, key)
-			}
-		}
-	}
-
 	return func(c *gin.Context) {
-		bindDataVal := reflect.New(bindVal.Type()).Interface()
+		bindData := reflect.New(bindVal.Type()).Interface()
+		bindDataVal := utils.GetInstanceVal(bindData)
+		for i := 0; i < bindVal.NumField(); i++ {
+			fieldValue := bindVal.Field(i)
+			bindDataVal.Field(i).Set(fieldValue)
+		}
 
 		if strings.Contains(c.FullPath(), ":") {
-			c.ShouldBindUri(bindDataVal)
+			c.ShouldBindUri(bindData)
 		}
 
-		if err := c.ShouldBind(bindDataVal); err != nil {
+		if err := c.ShouldBind(bindData); err != nil {
 			new(bm.Res).FailFront(err2Str(err)).Send(c)
 			c.Abort()
 			return
 		}
 
 		// 将绑定的数据存储到上下文中
-		c.Set("reqBind_", bindDataVal)
+		c.Set("reqBind_", bindData)
 		c.Next()
 	}
 }
