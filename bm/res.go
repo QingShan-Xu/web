@@ -87,8 +87,8 @@ func (response *Res) Send(c *gin.Context) {
 }
 
 type ResList struct {
-	PageSize int           `json:"page_size"`
-	Current  int           `json:"current"`
-	Data     []interface{} `json:"data"`
-	Total    int           `json:"total"`
+	PageSize int         `json:"page_size"`
+	Current  int         `json:"current"`
+	Data     interface{} `json:"data"`
+	Total    int64       `json:"total"`
 }

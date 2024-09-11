@@ -22,47 +22,24 @@ var METHOD = struct {
 	DELETE: "DELETE",
 }
 
-// Finisher 是一个包含常量的结构体，用于定义数据库操作的结尾句类型。
-var Finisher = struct {
-	//	示例:
-	//
-	//		tx := ctx.MustGet("reqTX_").(*gorm.DB) // tx := 在 Router 中定义的一系列 gorm 的 Chain Methods
-	//		result := tx.Find(&data)
-	//		if result.Error != nil { // 后端错误
-	//			new(bm.Res).FailBackend(result.Error).Send(ctx)
-	//			ctx.Abort()
-	//			return
-	//		}
-	//		if result.RowsAffected == 0 { // 前端错误
-	//			new(bm.Res).FailFront("数据不存在").Send(ctx)
-	//			ctx.Abort()
-	//			return
-	//		}
-	//		new(bm.Res).SucJson(data).Send(ctx) // 返回数据
-	//		ctx.Abort() // 阻止后续 Handler, 即阻止 Router 中的 自定义Handler
-	First string
-	//	示例:
-	//
-	//		tx := ctx.MustGet("reqTX_").(*gorm.DB)  // tx := 在 Router 中定义的一系列 gorm 的 Chain Methods
-	//		bind := ctx.MustGet("reqBind_") //  // bind := 在 Router 中定义的 Bind
-	//		result := tx.Create(bind)
-	//		if result.Error != nil { // 后端错误
-	//			new(bm.Res).FailBackend(result.Error).Send(ctx)
-	//			ctx.Abort()
-	//			return
-	//		}
-	//		new(bm.Res).SucJson(bind).Send(ctx) // 返回数据
-	//		ctx.Abort() // 阻止后续 Handler, 即阻止 Router 中的 自定义Handler
-	Create string
-
-	Update string
-
-	Delete string
+var TYPE = struct {
+	GET_LIST   string
+	GET_ONE    string
+	UPDATE_ONE string
+	// UPDATE_LIST string
+	CREATE_ONE string
+	// CREATE_LIST string
+	DELETE_ONE string
+	// DELETE_LIST string
 }{
-	First:  "First",
-	Create: "Create",
-	Update: "Update",
-	Delete: "Delete",
+	GET_LIST:   "GET_LIST",
+	GET_ONE:    "GET_ONE",
+	UPDATE_ONE: "UPDATE_ONE",
+	// UPDATE_LIST: "UPDATE_LIST",
+	CREATE_ONE: "CREATE_ONE",
+	// CREATE_LIST: "CREATE_LIST",
+	DELETE_ONE: "DELETE_ONE",
+	// DELETE_LIST: "DELETE_LIST",
 }
 
 type Router struct {
@@ -86,8 +63,8 @@ type Router struct {
 	MODEL interface{}
 	WHERE map[string]string
 
-	// 数据库: 结尾句
-	Finisher       string
+	Type string
+
 	BeforeFinisher func(bind interface{}) interface{}
 }
 

@@ -5,23 +5,24 @@ import (
 	"reflect"
 
 	"github.com/QingShan-Xu/xjh/bm"
+	"github.com/QingShan-Xu/xjh/rt/internal/utils"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func ReqFinisherMiddleware(
+func ReqTypeMiddleware(
 	BeforeFinisher func(bind interface{}) interface{},
-	Finisher string,
+	Type string,
 	name string,
 ) gin.HandlerFunc {
 
-	if Finisher == "First" {
+	if Type == "GET_ONE" {
 		return func(ctx *gin.Context) {
 			tx := ctx.MustGet("reqTX_").(*gorm.DB)
 			model := ctx.MustGet("reqModel_")
 
-			result := tx.Find(model)
+			result := tx.First(model)
 			if result.Error != nil {
 				new(bm.Res).FailBackend(result.Error).Send(ctx)
 				ctx.Abort()
@@ -39,7 +40,38 @@ func ReqFinisherMiddleware(
 		}
 	}
 
-	if Finisher == "Create" {
+	if Type == "GET_LIST" {
+		return func(ctx *gin.Context) {
+			tx := ctx.MustGet("reqTX_").(*gorm.DB)
+			model := ctx.MustGet("reqModel_")
+			bind := ctx.MustGet("reqBind_")
+			bindMap := utils.Struct2map(bind, true)
+			modelList := reflect.New(reflect.SliceOf(reflect.TypeOf(model))).Interface()
+			var total int64
+
+			if err := tx.Count(&total).Error; err != nil {
+				new(bm.Res).FailBackend(err).Send(ctx)
+				ctx.Abort()
+				return
+			}
+
+			if err := tx.Find(modelList).Error; err != nil {
+				new(bm.Res).FailBackend(err).Send(ctx)
+				ctx.Abort()
+				return
+			}
+
+			new(bm.Res).SucJson(bm.ResList{
+				Data:     modelList,
+				Total:    total,
+				PageSize: bindMap["Pagination"].(map[string]interface{})["PageSize"].(int),
+				Current:  bindMap["Pagination"].(map[string]interface{})["Current"].(int),
+			}).Send(ctx)
+			ctx.Abort()
+		}
+	}
+
+	if Type == "CREATE_ONE" {
 		return func(ctx *gin.Context) {
 			var bind interface{}
 			reqBind := ctx.MustGet("reqBind_")
@@ -73,7 +105,7 @@ func ReqFinisherMiddleware(
 		}
 	}
 
-	if Finisher == "Update" {
+	if Type == "UPDATE_ONE" {
 		return func(ctx *gin.Context) {
 			var bind interface{}
 			reqBind := ctx.MustGet("reqBind_")
@@ -97,7 +129,7 @@ func ReqFinisherMiddleware(
 		}
 	}
 
-	if Finisher == "Delete" {
+	if Type == "DELETE_ONE" {
 		return func(ctx *gin.Context) {
 			tx := ctx.MustGet("reqTX_").(*gorm.DB)
 			reqModel := ctx.MustGet("reqModel_")
@@ -114,6 +146,6 @@ func ReqFinisherMiddleware(
 		}
 	}
 
-	log.Fatalf("%s: %s 该方法还未在 Finisher 中实现", name, Finisher)
+	log.Fatalf("%s: %s 该方法还未在 Type 中实现", name, Type)
 	return func(ctx *gin.Context) { ctx.Next() }
 }

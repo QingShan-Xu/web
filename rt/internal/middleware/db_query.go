@@ -10,19 +10,13 @@ import (
 	"gorm.io/gorm"
 )
 
-type Query struct {
-	Type  string // 类型
-	Query string // 语句
-	Data  interface{}
-}
-
 func ReqPreDBMiddleware(
 	WHERE map[string]string,
 	Bind interface{},
+	TYPE string,
 	MODEL interface{},
 	name string,
 ) gin.HandlerFunc {
-	var QueryList []Query
 
 	if MODEL == nil {
 		log.Fatalf("%s: MODEL 不能为空", name)
@@ -35,61 +29,53 @@ func ReqPreDBMiddleware(
 		log.Fatalf("%s: Bind 必须为结构体", name)
 	}
 
-	bindFieldNames := make(map[string]struct{})
-	t := bindVal.Type()
-	for i := 0; i < t.NumField(); i++ {
-		field := t.Field(i)
-		bindFieldNames[field.Name] = struct{}{}
-	}
+	bindFieldNames := utils.MapFlatten(utils.Struct2map(Bind, true))
 
 	if len(WHERE) > 0 {
 		for query, data := range WHERE {
-			if data == "" {
-				log.Fatalf("%s: WHERE 条件值不能为空", name)
+			if data == "" || query == "" {
+				log.Fatalf("%s , %s: WHERE 条件值或语句不能为空", query, name)
 			}
 			if _, exists := bindFieldNames[data]; !exists {
-				log.Fatalf("%s: WHERE 引用值: %s 不在 Bind 或 InitValue 中", name, data)
+				log.Fatalf("%s: WHERE 引用值: %s 不在 Bind 中", name, data)
 			}
-			QueryList = append(QueryList, Query{
-				Type:  "WHERE",
-				Query: query,
-				Data:  data,
-			})
+		}
+	}
+
+	if TYPE == "GET_LIST" {
+		dataPage, existsPage := bindFieldNames["Pagination.PageSize"]
+		if !existsPage {
+			log.Fatalf("%s: GET_LIST 引用值: %s 不在 Bind 中", name, "Pagination.PageSize")
+		}
+		if _, ok := dataPage.(int); !ok {
+			log.Fatalf("%s: GET_LIST 引用值: %s 不是 int 类型", name, "Pagination.PageSize")
+		}
+
+		dataCur, existsCur := bindFieldNames["Pagination.Current"]
+		if !existsCur {
+			log.Fatalf("%s: GET_LIST 引用值: %s 不在 Bind 中", name, "Pagination.Current")
+		}
+		if _, ok := dataCur.(int); !ok {
+			log.Fatalf("%s: GET_LIST 引用值: %s 不是 int 类型", name, "Pagination.Current")
 		}
 	}
 
 	return func(ctx *gin.Context) {
-		reqBind := struct2map(ctx.MustGet("reqBind_"))
-		var needQuery []Query
+		reqBindMap := utils.MapFlatten(utils.Struct2map(ctx.MustGet("reqBind_"), false))
 
 		db := cf.ORMDB.Model(newMODEL)
 
-		for _, query := range QueryList {
-			if queryData, ok := reqBind[query.Data.(string)]; ok {
-				switch qd := queryData.(type) {
-				case string:
-					if qd != "" {
-						needQuery = append(needQuery, Query{
-							Type:  query.Type,
-							Query: query.Query,
-							Data:  qd,
-						})
-					}
-				case int:
-					if qd != 0 {
-						needQuery = append(needQuery, Query{
-							Type:  query.Type,
-							Query: query.Query,
-							Data:  qd,
-						})
-					}
-				}
-			}
+		if TYPE == "GET_LIST" {
+			pageSize := reqBindMap["Pagination.PageSize"].(int)
+			current := reqBindMap["Pagination.Current"].(int)
+			db.Limit(pageSize).Offset((current - 1) * pageSize)
 		}
 
-		for _, query := range needQuery {
-			if query.Type == "WHERE" {
-				db.Where(query.Query, query.Data)
+		if len(WHERE) > 0 {
+			for query, data := range WHERE {
+				if bindData, ok := reqBindMap[data]; ok {
+					db.Where(query, bindData)
+				}
 			}
 		}
 

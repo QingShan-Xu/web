@@ -2,11 +2,9 @@ package rt
 
 import (
 	"log"
-	"reflect"
 
 	"github.com/QingShan-Xu/xjh/cf"
 	"github.com/QingShan-Xu/xjh/rt/internal/middleware"
-	"github.com/QingShan-Xu/xjh/rt/internal/utils"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -117,44 +115,18 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 		middlewareFuncs = append(middlewareFuncs, middleware.ReqBindMiddleware(regRouter.Bind, name))
 	}
 
-	// 如果有 WHERE 条件，添加数据库预处理中间件。
-	if regRouter.WHERE != nil {
-		middlewareFuncs = append(middlewareFuncs, middleware.ReqPreDBMiddleware(
-			regRouter.WHERE,
-			regRouter.Bind,
-			regRouter.MODEL,
-			name,
-		))
-	} else {
-		middlewareFuncs = append(middlewareFuncs, func(ctx *gin.Context) {
-			db := cf.ORMDB
-			if regRouter.MODEL != nil {
-				newModel := reflect.New(utils.GetInstanceVal(regRouter.MODEL).Type()).Interface()
-				db = db.Model(newModel)
-				ctx.Set("reqModel_", newModel)
-			}
-			ctx.Set("reqTX_", db)
-			ctx.Next()
-		})
-	}
+	middlewareFuncs = append(middlewareFuncs, middleware.ReqPreDBMiddleware(
+		regRouter.WHERE,
+		regRouter.Bind,
+		regRouter.Type,
+		regRouter.MODEL,
+		name,
+	))
 
-	if regRouter.Finisher != "" && regRouter.Handler != nil {
-		log.Fatalf("%s: 不能同时使用 Handler 和 Finisher", name)
-	}
-
-	if regRouter.Finisher != "" && regRouter.MODEL == nil {
-		log.Fatalf("%s: 在使用 Finisher 时 MODEL 不能为空", name)
-	}
-
-	if regRouter.Finisher == "Update" && regRouter.WHERE == nil {
-		log.Fatalf("%s: 在使用 Update 时 WHERE 为必填项", name)
-	}
-
-	// 如果有终结器且没有处理程序，添加请求终结器中间件。
-	if regRouter.Finisher != "" {
-		middlewareFuncs = append(middlewareFuncs, middleware.ReqFinisherMiddleware(
+	if regRouter.Type != "" {
+		middlewareFuncs = append(middlewareFuncs, middleware.ReqTypeMiddleware(
 			regRouter.BeforeFinisher,
-			regRouter.Finisher,
+			regRouter.Type,
 			name,
 		))
 	}
