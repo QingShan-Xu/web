@@ -47,8 +47,11 @@ func ReqPreDBMiddleware(
 
 	if len(ORDER) > 0 {
 		for data, query := range ORDER {
-			if query != "desc" && query != "asc" {
-				log.Fatalf("%s: ORDER 语句: %s 必须为 desc 或 asc", name, data)
+			if _, exists := bindFieldNames[data]; !exists {
+				log.Fatalf("%s: ORDER 引用值: %s 不在 Bind 中", name, data)
+			}
+			if _, exists := bindFieldNames[query]; !exists {
+				log.Fatalf("%s: ORDER 引用值: %s 不在 Bind 中", name, data)
 			}
 		}
 	}
