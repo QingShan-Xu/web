@@ -73,6 +73,14 @@ func ReqPreDBMiddleware(
 		}
 	}
 
+	if len(SELECT) > 0 {
+		for _, data := range SELECT {
+			if data == "" {
+				log.Fatalf("%s: SELECT 条件值 不能为空", name)
+			}
+		}
+	}
+
 	/* 	if TYPE == "CREATE_ONE" || || TYPE == "DELETE_ONE" {
 		log.Fatal("还没做")
 	} */
