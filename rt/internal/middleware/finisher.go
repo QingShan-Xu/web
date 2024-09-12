@@ -55,7 +55,10 @@ func ReqTypeMiddleware(
 				return
 			}
 
-			if err := tx.Find(modelList).Error; err != nil {
+			pageSize := bindMap["Pagination"].(map[string]interface{})["PageSize"].(int)
+			current := bindMap["Pagination"].(map[string]interface{})["Current"].(int)
+
+			if err := tx.Limit(pageSize).Offset((current - 1) * pageSize).Find(modelList).Error; err != nil {
 				new(bm.Res).FailBackend(err).Send(ctx)
 				ctx.Abort()
 				return
@@ -64,8 +67,8 @@ func ReqTypeMiddleware(
 			new(bm.Res).SucJson(bm.ResList{
 				Data:     modelList,
 				Total:    total,
-				PageSize: bindMap["Pagination"].(map[string]interface{})["PageSize"].(int),
-				Current:  bindMap["Pagination"].(map[string]interface{})["Current"].(int),
+				PageSize: pageSize,
+				Current:  current,
 			}).Send(ctx)
 			ctx.Abort()
 		}

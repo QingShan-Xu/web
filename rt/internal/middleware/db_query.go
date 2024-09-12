@@ -82,12 +82,6 @@ func ReqPreDBMiddleware(
 
 		reqBindMap := utils.MapFlatten(utils.Struct2map(ctx.MustGet("reqBind_"), false))
 
-		if TYPE == "GET_LIST" {
-			pageSize := reqBindMap["Pagination.PageSize"].(int)
-			current := reqBindMap["Pagination.Current"].(int)
-			db.Limit(pageSize).Offset((current - 1) * pageSize)
-		}
-
 		if len(WHERE) > 0 {
 			for query, data := range WHERE {
 				if bindData, ok := reqBindMap[data]; ok {
