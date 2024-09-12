@@ -60,13 +60,12 @@ type Router struct {
 	Bind    interface{} // 请求参数 struct{ Name string `json:"name" form:"name"` }
 
 	// 数据库: 链式条件
-	MODEL interface{}
-	WHERE map[string]string
-	ORDER map[string]string
+	MODEL  interface{}
+	WHERE  map[string]string
+	ORDER  map[string]string
+	SELECT []string
 
 	Type string
-
-	BeforeInset func(bind interface{}) interface{}
 }
 
 type Handler func(C *gin.Context, TX *gorm.DB, bind interface{}) (res *bm.Res)

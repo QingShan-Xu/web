@@ -118,6 +118,7 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 	middlewareFuncs = append(middlewareFuncs, middleware.ReqPreDBMiddleware(
 		regRouter.WHERE,
 		regRouter.ORDER,
+		regRouter.SELECT,
 
 		regRouter.Bind,
 		regRouter.Type,
@@ -127,7 +128,6 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 
 	if regRouter.Type != "" {
 		middlewareFuncs = append(middlewareFuncs, middleware.ReqTypeMiddleware(
-			regRouter.BeforeInset,
 			regRouter.Type,
 			name,
 		))

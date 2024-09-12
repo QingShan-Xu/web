@@ -12,7 +12,6 @@ import (
 )
 
 func ReqTypeMiddleware(
-	BeforeInset func(bind interface{}) interface{},
 	Type string,
 	name string,
 ) gin.HandlerFunc {
@@ -77,25 +76,7 @@ func ReqTypeMiddleware(
 	if Type == "CREATE_ONE" {
 		return func(ctx *gin.Context) {
 			var bind interface{}
-			reqBind := ctx.MustGet("reqBind_")
-			reqModel := ctx.MustGet("reqModel_")
-
 			tx := ctx.MustGet("reqTX_").(*gorm.DB)
-			if BeforeInset != nil {
-				beforeBind := BeforeInset(reqBind)
-
-				if reflect.TypeOf(beforeBind).Kind() != reflect.Pointer {
-					beforeBind = &beforeBind
-				}
-				if reflect.TypeOf(beforeBind).Kind() != reflect.TypeOf(reqModel).Kind() {
-					new(bm.Res).FailBackend(name, ": 创建对象 与 数据结构不一致").Send(ctx)
-					ctx.Abort()
-					return
-				}
-			} else {
-				bind = reqBind
-			}
-
 			result := tx.Create(bind)
 			if result.Error != nil {
 				new(bm.Res).FailBackend(result.Error).Send(ctx)
@@ -109,16 +90,11 @@ func ReqTypeMiddleware(
 	}
 
 	if Type == "UPDATE_ONE" {
+
 		return func(ctx *gin.Context) {
 			var bind interface{}
-			reqBind := ctx.MustGet("reqBind_")
 			tx := ctx.MustGet("reqTX_").(*gorm.DB)
-			if BeforeInset != nil {
-				beforBind := BeforeInset(reqBind)
-				bind = beforBind
-			} else {
-				bind = reqBind
-			}
+
 			// mysql不支持Returning
 			result := tx.Clauses(clause.Returning{}).Updates(bind)
 			if result.Error != nil {

@@ -14,6 +14,7 @@ import (
 func ReqPreDBMiddleware(
 	WHERE map[string]string,
 	ORDER map[string]string,
+	SELECT []string,
 
 	Bind interface{},
 	TYPE string,
@@ -72,7 +73,7 @@ func ReqPreDBMiddleware(
 		}
 	}
 
-	/* 	if TYPE == "CREATE_ONE" || TYPE == "UPDATE_ONE" || TYPE == "DELETE_ONE" {
+	/* 	if TYPE == "CREATE_ONE" || || TYPE == "DELETE_ONE" {
 		log.Fatal("还没做")
 	} */
 
@@ -98,6 +99,10 @@ func ReqPreDBMiddleware(
 					db.Order(fmt.Sprintf("%s %s", bindData, bindQuery))
 				}
 			}
+		}
+
+		if len(SELECT) > 0 {
+			db.Select(SELECT)
 		}
 
 		ctx.Set("reqModel_", newMODEL)
