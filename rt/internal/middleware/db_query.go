@@ -25,8 +25,6 @@ func ReqPreDBMiddleware(
 		log.Fatalf("%s: MODEL 不能为空", name)
 	}
 
-	newMODEL := reflect.New(utils.GetInstanceVal(MODEL).Type()).Interface()
-
 	bindVal := utils.GetInstanceVal(Bind)
 	if bindVal.Type().Kind() != reflect.Struct {
 		log.Fatalf("%s: Bind 必须为结构体", name)
@@ -79,10 +77,10 @@ func ReqPreDBMiddleware(
 	} */
 
 	return func(ctx *gin.Context) {
+		newMODEL := reflect.New(utils.GetInstanceVal(MODEL).Type()).Interface()
+		db := cf.ORMDB.Session(&gorm.Session{}).Model(newMODEL)
 
 		reqBindMap := utils.MapFlatten(utils.Struct2map(ctx.MustGet("reqBind_"), false))
-
-		db := cf.ORMDB.Model(newMODEL)
 
 		if TYPE == "GET_LIST" {
 			pageSize := reqBindMap["Pagination.PageSize"].(int)
