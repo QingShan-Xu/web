@@ -63,7 +63,7 @@ type Router struct {
 	MODEL  interface{}
 	WHERE  map[string]string
 	ORDER  map[string]string
-	SELECT []string
+	SELECT map[string]string
 
 	Type string
 }

@@ -14,7 +14,7 @@ import (
 func ReqPreDBMiddleware(
 	WHERE map[string]string,
 	ORDER map[string]string,
-	SELECT []string,
+	SELECT map[string]string,
 
 	Bind interface{},
 	TYPE string,
@@ -55,6 +55,17 @@ func ReqPreDBMiddleware(
 		}
 	}
 
+	if len(SELECT) > 0 {
+		for query, data := range SELECT {
+			if data == "" || query == "" {
+				log.Fatalf("%s , %s: SELECT 条件值或语句不能为空", query, name)
+			}
+			if _, exists := bindFieldNames[data]; !exists {
+				log.Fatalf("%s: SELECT 引用值: %s 不在 Bind 中", name, data)
+			}
+		}
+	}
+
 	if TYPE == "GET_LIST" {
 		dataPage, existsPage := bindFieldNames["Pagination.PageSize"]
 		if !existsPage {
@@ -70,14 +81,6 @@ func ReqPreDBMiddleware(
 		}
 		if _, ok := dataCur.(int); !ok {
 			log.Fatalf("%s: GET_LIST 引用值: %s 不是 int 类型", name, "Pagination.Current")
-		}
-	}
-
-	if len(SELECT) > 0 {
-		for _, data := range SELECT {
-			if data == "" {
-				log.Fatalf("%s: SELECT 条件值 不能为空", name)
-			}
 		}
 	}
 
@@ -110,7 +113,9 @@ func ReqPreDBMiddleware(
 		}
 
 		if len(SELECT) > 0 {
-			db.Select(SELECT)
+			for query := range SELECT {
+				db.Select(query)
+			}
 		}
 
 		ctx.Set("reqModel_", newMODEL)

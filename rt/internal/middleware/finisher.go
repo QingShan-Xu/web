@@ -12,6 +12,8 @@ import (
 )
 
 func ReqTypeMiddleware(
+	SELECT map[string]string,
+
 	Type string,
 	name string,
 ) gin.HandlerFunc {
@@ -92,8 +94,15 @@ func ReqTypeMiddleware(
 	if Type == "UPDATE_ONE" {
 
 		return func(ctx *gin.Context) {
-			var bind interface{}
 			tx := ctx.MustGet("reqTX_").(*gorm.DB)
+			reqBind := utils.MapFlatten(utils.Struct2map(ctx.MustGet("reqBind_"), true))
+			bind := make(map[string]interface{}, 0)
+
+			for k, v := range SELECT {
+				if data, ok := reqBind[v]; ok {
+					bind[k] = data
+				}
+			}
 
 			// mysql不支持Returning
 			result := tx.Clauses(clause.Returning{}).Updates(bind)

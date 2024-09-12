@@ -128,6 +128,8 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 
 	if regRouter.Type != "" {
 		middlewareFuncs = append(middlewareFuncs, middleware.ReqTypeMiddleware(
+			regRouter.SELECT,
+
 			regRouter.Type,
 			name,
 		))
