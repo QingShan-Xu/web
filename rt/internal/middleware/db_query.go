@@ -15,6 +15,7 @@ func ReqPreDBMiddleware(
 	WHERE map[string]string,
 	ORDER map[string]string,
 	SELECT map[string]string,
+	PRELOAD []string,
 
 	Bind interface{},
 	TYPE string,
@@ -62,6 +63,14 @@ func ReqPreDBMiddleware(
 			}
 			if _, exists := bindFieldNames[data]; !exists {
 				log.Fatalf("%s: SELECT 引用值: %s 不在 Bind 中", name, data)
+			}
+		}
+	}
+
+	if len(PRELOAD) > 0 {
+		for _, data := range PRELOAD {
+			if data == "" {
+				log.Fatalf("%s: PRELOAD 条件值或语句不能为空", name)
 			}
 		}
 	}
@@ -115,6 +124,12 @@ func ReqPreDBMiddleware(
 		if len(SELECT) > 0 {
 			for query := range SELECT {
 				db.Select(query)
+			}
+		}
+
+		if len(PRELOAD) > 0 {
+			for _, query := range PRELOAD {
+				db.Preload(query)
 			}
 		}
 

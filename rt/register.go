@@ -119,6 +119,7 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 		regRouter.WHERE,
 		regRouter.ORDER,
 		regRouter.SELECT,
+		regRouter.PRELOAD,
 
 		regRouter.Bind,
 		regRouter.Type,
