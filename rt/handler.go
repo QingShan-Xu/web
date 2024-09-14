@@ -7,14 +7,15 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/QingShan-Xu/xjh/bm"
 	"github.com/QingShan-Xu/xjh/cf"
 	"github.com/QingShan-Xu/xjh/rt/internal/class"
-	"github.com/QingShan-Xu/xjh/rt/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func genHandler(
@@ -22,9 +23,7 @@ func genHandler(
 	name string,
 ) gin.HandlerFunc {
 
-	dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(router.Bind)}
-
-	if err := check(router, dynamicBindStruct); err != nil {
+	if err := check(router); err != nil {
 		log.Fatalf("%s: %v", name, err)
 	}
 
@@ -111,29 +110,131 @@ func handler(router *Router) gin.HandlerFunc {
 			}
 		}
 
-		if len(PRELOAD) > 0 {
-			for _, query := range PRELOAD {
+		if len(router.PRELOAD) > 0 {
+			for _, query := range router.PRELOAD {
 				db.Preload(query)
 			}
 		}
 
-		if len(JOINS) > 0 {
-			for _, query := range JOINS {
+		if len(router.JOINS) > 0 {
+			for _, query := range router.JOINS {
 				db.Joins(query)
 			}
 		}
 
-		ctx.Set("reqModel_", model)
-		ctx.Set("reqTX_", db.Session(&gorm.Session{}))
-		ctx.Next()
+		if router.Type == "" && router.Handler != nil {
+			res := router.Handler(ctx, db.Session(&gorm.Session{}), bindData)
+			if ctx.Writer.Written() {
+				return
+			}
+			res.Send(ctx)
+			return
+		}
+
+		if router.Type == TYPE.GET_ONE {
+			result := db.First(model)
+			if result.Error != nil {
+				res.FailBackend(result.Error).SendAbort(ctx)
+				return
+			}
+
+			if result.RowsAffected == 0 {
+				res.FailFront("数据不存在").SendAbort(ctx)
+				return
+			}
+
+			res.SucJson(model).SendAbort(ctx)
+			return
+		}
+
+		if router.Type == TYPE.GET_LIST {
+			modelListVal := reflect.SliceOf(modelVal.Type())
+			modelList := reflect.New(modelListVal).Interface()
+			var total int64
+
+			if err := db.Count(&total).Error; err != nil {
+				res.FailBackend("获取失败").SendAbort(ctx)
+				return
+			}
+
+			pageSize, pageSizeErr := dynamicBindStruct.GetField("PageSize")
+			if pageSizeErr != nil {
+				res.FailBackend("处理分页失败").SendAbort(ctx)
+				return
+			}
+
+			current, currentErr := dynamicBindStruct.GetField("Current")
+			if currentErr != nil {
+				res.FailBackend("处理分页失败").SendAbort(ctx)
+				return
+			}
+
+			if err := db.Limit(pageSize.(int)).Offset((current.(int) - 1) * pageSize.(int)).Find(modelList).Error; err != nil {
+				res.FailBackend(err).SendAbort(ctx)
+				return
+			}
+
+			res.SucJson(bm.ResList{
+				Data:     modelList,
+				Total:    total,
+				PageSize: pageSize.(int),
+				Current:  current.(int),
+			}).SendAbort(ctx)
+			return
+		}
+
+		if router.Type == TYPE.CREATE_ONE {
+			result := db.Create(bindData)
+			if result.Error != nil {
+				res.FailBackend(result.Error).SendAbort(ctx)
+				return
+			}
+
+			res.SucJson(bindData).SendAbort(ctx)
+			return
+		}
+
+		if router.Type == TYPE.UPDATE_ONE {
+			var result *gorm.DB
+			if ok := reflect.DeepEqual(router.Bind, router.MODEL); ok {
+				result = db.Updates(bindData)
+			} else {
+				bind := make(map[string]interface{}, 0)
+				for k, v := range router.SELECT {
+					if data, err := dynamicBindStruct.GetField(v); err != nil {
+						res.FailBackend(fmt.Errorf("请求值 %s 缺失", v))
+					} else {
+						bind[k] = data
+					}
+				}
+				result = db.Clauses(clause.Returning{}).Updates(bind)
+			}
+
+			if result.Error != nil {
+				res.FailBackend(result.Error).SendAbort(ctx)
+				return
+			}
+
+			res.SucJson(true).SendAbort(ctx)
+			return
+		}
+
+		if router.Type == TYPE.DELETE_ONE {
+			if err := db.Delete(model).Error; err != nil {
+				res.FailBackend("删除失败").SendAbort(ctx)
+				return
+			}
+
+			res.SucJson(true).SendAbort(ctx)
+			return
+		}
 
 	}
 }
 
-func check(
-	router *Router,
-	dynamicBindStruct class.DynamicStruct,
-) error {
+func check(router *Router) error {
+	dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(router.Bind)}
+
 	if router.Bind != nil && reflect.TypeOf(router.Bind).Kind() != reflect.Struct {
 		return fmt.Errorf("router.Bind 必须是 [struct]")
 	}
@@ -206,6 +307,25 @@ func check(
 		}
 	}
 
+	if router.Type == TYPE.CREATE_ONE {
+		if ok := reflect.DeepEqual(router.Bind, router.MODEL); !ok {
+			return fmt.Errorf("CREATE_ONE BIND 绑定对象与 MODEL 不一致")
+		}
+	}
+
+	if router.Type == TYPE.UPDATE_ONE {
+		if len(router.WHERE) == 0 {
+			return fmt.Errorf("UPDATE_ONE 时 WHERE 不能为空")
+		}
+		if ok := reflect.DeepEqual(router.Bind, router.MODEL); !ok && len(router.SELECT) == 0 {
+			return fmt.Errorf("UPDATE_ONE BIND 绑定对象与 MODEL 不一致时 SELECT 不得为空")
+		}
+	}
+
+	if router.Type == TYPE.DELETE_ONE && len(router.WHERE) == 0 {
+		return fmt.Errorf("DELETE_ONE 时 WHERE 不能为空")
+	}
+
 	return nil
 }
 
@@ -240,7 +360,7 @@ func err2Str(err error) string {
 		case validator.ValidationErrors:
 			var errStrSlice []string
 			for _, validatoE := range e.Translate(cf.Trans) {
-				errStrSlice = append(errStrSlice, utils.ToSnakeCase(validatoE))
+				errStrSlice = append(errStrSlice, toSnakeCase(validatoE))
 			}
 			return strings.Join(errStrSlice, ",")
 		default:
@@ -253,4 +373,20 @@ func err2Str(err error) string {
 		}
 	}
 	return ""
+}
+
+func toSnakeCase(str string) string {
+	var result []rune
+	for i, r := range str {
+		if unicode.IsUpper(r) {
+			// 如果不是字符串开始并且前一个字符不是下划线
+			if i > 0 && !(unicode.IsUpper(rune(str[i-1]))) {
+				result = append(result, '_') // 添加下划线
+			}
+			result = append(result, unicode.ToLower(r)) // 将大写字母转换为小写并添加到结果中
+		} else {
+			result = append(result, r) // 如果是小写字母或其他字符，直接添加到结果中
+		}
+	}
+	return string(result) // 将 rune 数组转换为字符串并返回
 }
