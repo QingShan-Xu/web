@@ -13,6 +13,7 @@ type Pet struct {
 
 	Name   string `json:"name" binding:"required"`
 	Status string `json:"status" binding:"required"`
+	Type   *int   `json:"type"`
 }
 
 var API api

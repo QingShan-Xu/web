@@ -46,7 +46,7 @@ func ReqTypeMiddleware(
 			tx := ctx.MustGet("reqTX_").(*gorm.DB)
 			model := ctx.MustGet("reqModel_")
 			bind := ctx.MustGet("reqBind_")
-			bindMap := utils.Struct2map(bind, true)
+			bindMap := utils.Struct2map(bind)
 			modelList := reflect.New(reflect.SliceOf(reflect.TypeOf(model))).Interface()
 			var total int64
 
@@ -95,7 +95,7 @@ func ReqTypeMiddleware(
 
 		return func(ctx *gin.Context) {
 			tx := ctx.MustGet("reqTX_").(*gorm.DB)
-			reqBind := utils.MapFlatten(utils.Struct2map(ctx.MustGet("reqBind_"), true))
+			reqBind := utils.MapFlatten(utils.Struct2map(ctx.MustGet("reqBind_")))
 			bind := make(map[string]interface{}, 0)
 
 			for k, v := range SELECT {

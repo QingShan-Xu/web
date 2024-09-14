@@ -86,6 +86,11 @@ func (response *Res) Send(c *gin.Context) {
 	}
 }
 
+func (response *Res) SendAbort(c *gin.Context) {
+	response.Send(c)
+	c.Abort()
+}
+
 type ResList struct {
 	PageSize int         `json:"page_size"`
 	Current  int         `json:"current"`

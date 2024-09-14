@@ -101,14 +101,11 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 		return
 	}
 
-	if regRouter.MODEL != nil {
+	if regRouter.MODEL != nil && !regRouter.NoAutoMigrate {
 		if err := cf.ORMDB.AutoMigrate(regRouter.MODEL); err != nil {
 			log.Fatalf("%s: 数据库自动迁移失败: %v", name, err)
 		}
 	}
-
-	// 初始化中间件函数列表，用于存储所有需要应用的中间件。
-	middlewareFuncs := make([]gin.HandlerFunc, 0)
 
 	// 如果有绑定参数，添加请求绑定中间件。
 	if regRouter.Bind != nil {

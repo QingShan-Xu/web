@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 	"unicode"
 )
 
@@ -60,40 +62,51 @@ func IsBasicType(tpe reflect.Type) bool {
 }
 
 // Struct2map 将结构体转换为 map，并且可以选择是否保留零值字段（布尔值除外）
-func Struct2map(s interface{}, keepZeroValues bool) map[string]interface{} {
+func Struct2map(s interface{}) map[string]interface{} {
 	data := make(map[string]interface{})
-	val := reflect.ValueOf(s)
+	sVal := reflect.ValueOf(s)
+	sTpe := reflect.TypeOf(s)
+	fmt.Printf("%+v\n", s)
 
 	// 处理指针的情况
-	if val.Kind() == reflect.Ptr {
-		val = val.Elem()
+	if sTpe.Kind() == reflect.Ptr {
+		sVal = sVal.Elem()
+		sTpe = sTpe.Elem()
 	}
 
 	// 确保 val 是结构体
-	if val.Kind() != reflect.Struct {
+	if sTpe.Kind() != reflect.Struct {
 		return data
 	}
 
-	for i := 0; i < val.NumField(); i++ {
-		field := val.Field(i)
-		fieldName := val.Type().Field(i).Name
+	for i := 0; i < sVal.NumField(); i++ {
+		fieldVal := sVal.Field(i)
+		fieldKind := fieldVal.Kind()
+		fieldName := fieldVal.Type().Name()
 
-		// 只处理导出字段
-		if field.CanInterface() {
-			fieldValue := field.Interface()
+		if !fieldVal.CanInterface() {
+			continue
+		}
+		fieldValue := fieldVal.Interface()
 
-			// 检查字段是否是结构体
-			if field.Kind() == reflect.Struct {
-				// 递归处理嵌套结构体
-				innerMap := Struct2map(fieldValue, keepZeroValues)
-				if len(innerMap) > 0 {
-					data[fieldName] = innerMap
-				}
-			} else if field.Kind() == reflect.Bool || keepZeroValues || !isZero(field) {
-				// 保留布尔值或根据参数决定是否保留零值
-				data[fieldName] = fieldValue
+		if fieldKind == reflect.Pointer {
+			fieldValue = fieldVal.Elem().Interface()
+			fieldVal = fieldVal.Elem()
+			fieldKind = fieldVal.Kind()
+		}
+
+		// 检查字段是否是结构体
+		if fieldKind == reflect.Struct {
+			innerMap := Struct2map(fieldValue)
+			if len(innerMap) > 0 {
+				data[fieldName] = innerMap
 			}
 		}
+
+		if fieldValue != nil {
+			data[fieldName] = fieldValue
+		}
+
 	}
 	return data
 }
@@ -141,4 +154,66 @@ func flatten(prefix string, m map[string]interface{}, flatMap map[string]interfa
 			flatMap[fullKey] = v
 		}
 	}
+}
+
+type DynamicStruct struct {
+	Value reflect.Value
+}
+
+// GetField 根据路径获取字段或键值
+func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
+	parts := strings.Split(path, ".")
+	val := ds.Value
+
+	for _, part := range parts {
+		switch val.Kind() {
+		case reflect.Pointer:
+			val = val.Elem()
+		case reflect.Map:
+			val = val.MapIndex(reflect.ValueOf(part))
+		case reflect.Struct:
+			val = getFieldByNameOrEmbedded(val, part)
+		case reflect.Slice, reflect.Array:
+			index := -1
+			_, err := fmt.Sscanf(part, "%d", &index)
+			if err != nil || index < 0 || index >= val.Len() {
+				return nil, fmt.Errorf("path %s: index %s out of range", path, part)
+			}
+			val = val.Index(index)
+		default:
+			return nil, fmt.Errorf("path %s: unexpected type %s", path, val.Kind())
+		}
+		if !val.IsValid() {
+			return nil, fmt.Errorf("path %s: field or key %s not found", path, part)
+		}
+	}
+
+	if val.Kind() == reflect.Pointer {
+		if val.IsNil() {
+			return nil, nil
+		}
+		val = val.Elem()
+	}
+
+	return val.Interface(), nil
+}
+
+// getFieldByNameOrEmbedded 检查嵌入结构体的字段并访问
+func getFieldByNameOrEmbedded(val reflect.Value, fieldName string) reflect.Value {
+	field := val.FieldByName(fieldName)
+	if field.IsValid() {
+		return field
+	}
+
+	// 如果是嵌入结构体，遍历所有字段进行嵌入检查
+	for i := 0; i < val.NumField(); i++ {
+		fieldType := val.Type().Field(i)
+		if fieldType.Anonymous { // 这是嵌入结构体
+			embeddedField := val.Field(i).FieldByName(fieldName)
+			if embeddedField.IsValid() {
+				return embeddedField
+			}
+		}
+	}
+	return reflect.Value{}
 }
