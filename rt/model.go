@@ -65,6 +65,7 @@ type Router struct {
 	ORDER   map[string]string
 	SELECT  map[string]string
 	PRELOAD []string
+	JOINS   []string
 
 	Type string
 }

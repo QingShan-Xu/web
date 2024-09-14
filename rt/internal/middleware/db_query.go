@@ -16,6 +16,7 @@ func ReqPreDBMiddleware(
 	ORDER map[string]string,
 	SELECT map[string]string,
 	PRELOAD []string,
+	JOINS []string,
 
 	Bind interface{},
 	TYPE string,
@@ -75,6 +76,14 @@ func ReqPreDBMiddleware(
 		}
 	}
 
+	if len(JOINS) > 0 {
+		for _, data := range JOINS {
+			if data == "" {
+				log.Fatalf("%s: JOIN 条件值或语句不能为空", name)
+			}
+		}
+	}
+
 	if TYPE == "GET_LIST" {
 		dataPage, existsPage := bindFieldNames["Pagination.PageSize"]
 		if !existsPage {
@@ -130,6 +139,12 @@ func ReqPreDBMiddleware(
 		if len(PRELOAD) > 0 {
 			for _, query := range PRELOAD {
 				db.Preload(query)
+			}
+		}
+
+		if len(JOINS) > 0 {
+			for _, query := range JOINS {
+				db.Joins(query)
 			}
 		}
 

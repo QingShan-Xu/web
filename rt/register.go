@@ -120,6 +120,7 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 		regRouter.ORDER,
 		regRouter.SELECT,
 		regRouter.PRELOAD,
+		regRouter.JOINS,
 
 		regRouter.Bind,
 		regRouter.Type,
