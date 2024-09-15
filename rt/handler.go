@@ -15,7 +15,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 func genHandler(
@@ -33,11 +32,12 @@ func genHandler(
 func handler(router *Router) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// 绑定请求值
-		var res *bm.Res
+		res := &bm.Res{}
 		var bindData interface{} = struct{}{}
 		if router.Bind != nil {
 			bindVal := reflect.ValueOf(router.Bind)
-			bindDataVal := reflect.New(reflect.TypeOf(router.Bind))
+			bindDataValPtr := reflect.New(reflect.TypeOf(router.Bind))
+			bindDataVal := bindDataValPtr.Elem()
 
 			// 赋初值
 			for i := 0; i < bindVal.NumField(); i++ {
@@ -47,33 +47,33 @@ func handler(router *Router) gin.HandlerFunc {
 				}
 			}
 
-			bindData = bindDataVal.Interface()
-
+			bindData = bindDataValPtr.Interface()
 			// uri
 			if strings.Contains(ctx.FullPath(), ":") {
 				ctx.ShouldBindUri(bindData)
 			}
 
-			// json, form, query
+			// json, form, query``
 			if err := ctx.ShouldBind(bindData); err != nil {
 				// binding 错误处理
 				new(bm.Res).FailFront(err2Str(err)).SendAbort(ctx)
 				return
 			}
 		}
-
+		fmt.Printf("%+v", bindData)
 		dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(bindData)}
 
-		modelVal := reflect.New(reflect.TypeOf(router.MODEL))
-		if modelVal.Kind() == reflect.Pointer {
-			modelVal = modelVal.Elem()
+		_modelTpe := reflect.TypeOf(router.MODEL)
+		if _modelTpe.Kind() == reflect.Pointer {
+			_modelTpe = _modelTpe.Elem()
 		}
+		modelVal := reflect.New(_modelTpe)
 
-		db := cf.ORMDB
 		model := modelVal.Interface()
+		db := cf.ORMDB.Session(&gorm.Session{})
 
 		if model != nil {
-			db.Model(model)
+			db = db.Model(model)
 		}
 
 		if len(router.WHERE) > 0 {
@@ -82,7 +82,7 @@ func handler(router *Router) gin.HandlerFunc {
 					res.FailBackend(err).SendAbort(ctx)
 					return
 				} else {
-					db.Where(query, bindData)
+					db = db.Where(query, bindData)
 				}
 			}
 		}
@@ -100,25 +100,25 @@ func handler(router *Router) gin.HandlerFunc {
 					res.FailBackend(bindQueryErr).SendAbort(ctx)
 					return
 				}
-				db.Order(fmt.Sprintf("%s %s", bindData, bindQuery))
+				db = db.Order(fmt.Sprintf("%s %s", bindData, bindQuery))
 			}
 		}
 
 		if len(router.SELECT) > 0 {
 			for query := range router.SELECT {
-				db.Select(query)
+				db = db.Select(query)
 			}
 		}
 
 		if len(router.PRELOAD) > 0 {
 			for _, query := range router.PRELOAD {
-				db.Preload(query)
+				db = db.Preload(query)
 			}
 		}
 
 		if len(router.JOINS) > 0 {
 			for _, query := range router.JOINS {
-				db.Joins(query)
+				db = db.Joins(query)
 			}
 		}
 
@@ -133,13 +133,14 @@ func handler(router *Router) gin.HandlerFunc {
 
 		if router.Type == TYPE.GET_ONE {
 			result := db.First(model)
-			if result.Error != nil {
-				res.FailBackend(result.Error).SendAbort(ctx)
-				return
-			}
 
 			if result.RowsAffected == 0 {
 				res.FailFront("数据不存在").SendAbort(ctx)
+				return
+			}
+
+			if result.Error != nil {
+				res.FailBackend("查询失败").SendAbort(ctx)
 				return
 			}
 
@@ -148,7 +149,7 @@ func handler(router *Router) gin.HandlerFunc {
 		}
 
 		if router.Type == TYPE.GET_LIST {
-			modelListVal := reflect.SliceOf(modelVal.Type())
+			modelListVal := reflect.SliceOf(modelVal.Elem().Type())
 			modelList := reflect.New(modelListVal).Interface()
 			var total int64
 
@@ -195,7 +196,18 @@ func handler(router *Router) gin.HandlerFunc {
 		}
 
 		if router.Type == TYPE.UPDATE_ONE {
-			var result *gorm.DB
+			result := db.First(model)
+
+			if result.RowsAffected == 0 {
+				res.FailFront("数据不存在").SendAbort(ctx)
+				return
+			}
+
+			if result.Error != nil {
+				res.FailBackend("查询失败").SendAbort(ctx)
+				return
+			}
+
 			if ok := reflect.DeepEqual(router.Bind, router.MODEL); ok {
 				result = db.Updates(bindData)
 			} else {
@@ -207,19 +219,31 @@ func handler(router *Router) gin.HandlerFunc {
 						bind[k] = data
 					}
 				}
-				result = db.Clauses(clause.Returning{}).Updates(bind)
+				result = db.Updates(bind)
 			}
 
 			if result.Error != nil {
-				res.FailBackend(result.Error).SendAbort(ctx)
+				res.FailBackend("更新失败").SendAbort(ctx)
 				return
 			}
 
-			res.SucJson(true).SendAbort(ctx)
+			res.SucJson(nil).SendAbort(ctx)
 			return
 		}
 
 		if router.Type == TYPE.DELETE_ONE {
+			result := db.First(model)
+
+			if result.RowsAffected == 0 {
+				res.FailFront("数据不存在").SendAbort(ctx)
+				return
+			}
+
+			if result.Error != nil {
+				res.FailBackend("查询失败").SendAbort(ctx)
+				return
+			}
+
 			if err := db.Delete(model).Error; err != nil {
 				res.FailBackend("删除失败").SendAbort(ctx)
 				return
@@ -295,6 +319,10 @@ func check(router *Router) error {
 				log.Fatalf("JOINS 条件值不能为空")
 			}
 		}
+	}
+
+	if router.Type != "" && router.Type != TYPE.CREATE_ONE && router.Type != TYPE.GET_ONE && router.Type != TYPE.GET_LIST && router.Type != TYPE.UPDATE_ONE && router.Type != TYPE.DELETE_ONE {
+		return fmt.Errorf("不识别的 Type [%s]", router.Type)
 	}
 
 	if router.Type == TYPE.GET_LIST {
