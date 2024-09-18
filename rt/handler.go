@@ -68,15 +68,16 @@ func handler(router *Router) gin.HandlerFunc {
 		dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(bindData)}
 
 		var modelVal reflect.Value
+		var model interface{}
 		if router.MODEL != nil {
 			_modelTpe := reflect.TypeOf(router.MODEL)
 			if _modelTpe.Kind() == reflect.Pointer {
 				_modelTpe = _modelTpe.Elem()
 			}
 			modelVal = reflect.New(_modelTpe)
+			model = modelVal.Interface()
 		}
 
-		model := modelVal.Interface()
 		db := cf.ORMDB.Session(&gorm.Session{})
 
 		if model != nil {
