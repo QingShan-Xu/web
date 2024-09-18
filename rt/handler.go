@@ -198,13 +198,34 @@ func handler(router *Router) gin.HandlerFunc {
 		}
 
 		if router.Type == TYPE.CREATE_ONE {
-			result := db.Create(bindData)
+			var result *gorm.DB
+			isSame := reflect.DeepEqual(router.Bind, router.MODEL)
+			if isSame {
+				result = db.Create(bindData)
+			} else {
+				for selectQuery := range router.SELECT {
+					selectData, err := dynamicBindStruct.GetField(selectQuery)
+					if err != nil {
+						res.FailBackend(fmt.Errorf("请求值 %s 缺失", selectQuery))
+					} else if selectData == nil {
+						continue
+					} else {
+						field := modelVal.FieldByName(selectQuery)
+						field.Set(reflect.ValueOf(selectData))
+					}
+				}
+				result = db.Create(model)
+			}
 			if result.Error != nil {
 				res.FailBackend(result.Error).SendAbort(ctx)
 				return
 			}
 
-			res.SucJson(bindData).SendAbort(ctx)
+			if isSame {
+				res.SucJson(bindData).SendAbort(ctx)
+			} else {
+				res.SucJson(model).SendAbort(ctx)
+			}
 			return
 		}
 
@@ -362,8 +383,8 @@ func check(router *Router) error {
 	}
 
 	if router.Type == TYPE.CREATE_ONE {
-		if ok := reflect.DeepEqual(router.Bind, router.MODEL); !ok {
-			return fmt.Errorf("CREATE_ONE BIND 绑定对象与 MODEL 不一致")
+		if ok := reflect.DeepEqual(router.Bind, router.MODEL); !ok && len(router.SELECT) == 0 {
+			return fmt.Errorf("CREATE_ONE BIND 与 MODEL 类型不一致时 SELECT 不得为空")
 		}
 	}
 
@@ -372,7 +393,7 @@ func check(router *Router) error {
 			return fmt.Errorf("UPDATE_ONE 时 WHERE 不能为空")
 		}
 		if ok := reflect.DeepEqual(router.Bind, router.MODEL); !ok && len(router.SELECT) == 0 {
-			return fmt.Errorf("UPDATE_ONE BIND 绑定对象与 MODEL 不一致时 SELECT 不得为空")
+			return fmt.Errorf("UPDATE_ONE BIND 与 MODEL 类型不一致时 SELECT 不得为空")
 		}
 	}
 
