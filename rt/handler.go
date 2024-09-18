@@ -68,7 +68,7 @@ func handler(router *Router) gin.HandlerFunc {
 		dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(bindData)}
 
 		var modelVal reflect.Value
-		if router.MODEL == nil {
+		if router.MODEL != nil {
 			_modelTpe := reflect.TypeOf(router.MODEL)
 			if _modelTpe.Kind() == reflect.Pointer {
 				_modelTpe = _modelTpe.Elem()
