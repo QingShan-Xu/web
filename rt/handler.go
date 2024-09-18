@@ -274,7 +274,9 @@ func check(router *Router) error {
 		return nil
 	}
 
-	dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(router.Bind)}
+	if router.Type != "" && router.Handler != nil {
+		return fmt.Errorf("router.Type 不能和 router.Handler 同时存在")
+	}
 
 	if router.Bind != nil && reflect.TypeOf(router.Bind).Kind() != reflect.Struct {
 		return fmt.Errorf("router.Bind 必须是 [struct]")
@@ -288,6 +290,8 @@ func check(router *Router) error {
 			len(router.JOINS) != 0) {
 		return fmt.Errorf("当使用数据库字段时 [MODEL] 不能为空")
 	}
+
+	dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(router.Bind)}
 
 	if len(router.WHERE) > 0 {
 		for query, data := range router.WHERE {
