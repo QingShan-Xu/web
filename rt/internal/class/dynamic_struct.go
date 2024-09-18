@@ -50,6 +50,11 @@ func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
 		return nil, nil
 	}
 
+	isNil := checkNil(val)
+	if isNil {
+		return nil, nil
+	}
+
 	return val.Interface(), nil
 }
 
@@ -88,4 +93,14 @@ func getFieldByNameOrEmbedded(val reflect.Value, fieldName string) reflect.Value
 		}
 	}
 	return reflect.Value{}
+}
+
+func checkNil(v reflect.Value) bool {
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Ptr, reflect.Slice, reflect.Map, reflect.Chan, reflect.Func, reflect.Interface:
+		return rv.IsNil()
+	default:
+		return false
+	}
 }
