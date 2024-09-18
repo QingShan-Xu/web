@@ -67,11 +67,14 @@ func handler(router *Router) gin.HandlerFunc {
 		fmt.Printf("%+v", bindData)
 		dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(bindData)}
 
-		_modelTpe := reflect.TypeOf(router.MODEL)
-		if _modelTpe.Kind() == reflect.Pointer {
-			_modelTpe = _modelTpe.Elem()
+		var modelVal reflect.Value
+		if router.MODEL == nil {
+			_modelTpe := reflect.TypeOf(router.MODEL)
+			if _modelTpe.Kind() == reflect.Pointer {
+				_modelTpe = _modelTpe.Elem()
+			}
+			modelVal = reflect.New(_modelTpe)
 		}
-		modelVal := reflect.New(_modelTpe)
 
 		model := modelVal.Interface()
 		db := cf.ORMDB.Session(&gorm.Session{})
@@ -283,12 +286,13 @@ func check(router *Router) error {
 	}
 
 	if router.MODEL == nil &&
-		(len(router.WHERE) != 0 ||
+		(router.Type != "" ||
+			len(router.WHERE) != 0 ||
 			len(router.ORDER) != 0 ||
 			len(router.SELECT) != 0 ||
 			len(router.PRELOAD) != 0 ||
 			len(router.JOINS) != 0) {
-		return fmt.Errorf("当使用数据库字段时 [MODEL] 不能为空")
+		return fmt.Errorf("当使用 router.Type 或 数据库字段时 [MODEL] 不能为空")
 	}
 
 	dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(router.Bind)}
