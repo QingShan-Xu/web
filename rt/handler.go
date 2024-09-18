@@ -257,6 +257,14 @@ func handler(router *Router) gin.HandlerFunc {
 }
 
 func check(router *Router) error {
+	if router.OriginalHandler != nil && router.Handler != nil {
+		return fmt.Errorf("router.OriginalHandler 和 router.Handler 不能同时存在")
+	}
+
+	if router.OriginalHandler != nil && router.Handler == nil {
+		return nil
+	}
+
 	dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(router.Bind)}
 
 	if router.Bind != nil && reflect.TypeOf(router.Bind).Kind() != reflect.Struct {
