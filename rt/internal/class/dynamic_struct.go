@@ -96,10 +96,9 @@ func getFieldByNameOrEmbedded(val reflect.Value, fieldName string) reflect.Value
 }
 
 func checkNil(v reflect.Value) bool {
-	rv := reflect.ValueOf(v)
-	switch rv.Kind() {
+	switch v.Kind() {
 	case reflect.Ptr, reflect.Slice, reflect.Map, reflect.Chan, reflect.Func, reflect.Interface:
-		return rv.IsNil()
+		return v.IsNil()
 	default:
 		return false
 	}
