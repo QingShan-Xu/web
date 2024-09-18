@@ -85,6 +85,8 @@ func handler(router *Router) gin.HandlerFunc {
 				if bindData, err := dynamicBindStruct.GetField(data); err != nil {
 					res.FailBackend(err).SendAbort(ctx)
 					return
+				} else if bindData == nil {
+					continue
 				} else {
 					db = db.Where(query, bindData)
 				}
@@ -103,6 +105,9 @@ func handler(router *Router) gin.HandlerFunc {
 				if bindQueryErr != nil {
 					res.FailBackend(bindQueryErr).SendAbort(ctx)
 					return
+				}
+				if bindData == nil || bindQuery == nil {
+					continue
 				}
 				db = db.Order(fmt.Sprintf("%s %s", bindData, bindQuery))
 			}
