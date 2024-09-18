@@ -30,6 +30,10 @@ func genHandler(
 }
 
 func handler(router *Router) gin.HandlerFunc {
+	if router.OriginalHandler != nil {
+		return router.OriginalHandler
+	}
+
 	return func(ctx *gin.Context) {
 		// 绑定请求值
 		res := &bm.Res{}
