@@ -72,4 +72,4 @@ type Router struct {
 	Type string
 }
 
-type Handler func(C *gin.Context, TX *gorm.DB, bind interface{}) (res *bm.Res)
+type Handler func(C *gin.Context, TX *gorm.DB, bind interface{}) *bm.Res
