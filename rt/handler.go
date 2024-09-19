@@ -118,9 +118,7 @@ func handler(router *Router) gin.HandlerFunc {
 		}
 
 		if len(router.SELECT) > 0 {
-			for _, query := range router.SELECT {
-				db = db.Select(query)
-			}
+			db = db.Select(router.SELECT)
 		}
 
 		if len(router.PRELOAD) > 0 {
