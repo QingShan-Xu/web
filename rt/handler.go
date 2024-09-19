@@ -385,7 +385,7 @@ func check(router *Router) error {
 	if router.Type == TYPE.CREATE_ONE {
 		if ok := reflect.DeepEqual(router.Bind, router.MODEL); !ok && len(router.CREATE) == 0 {
 			return fmt.Errorf("CREATE_ONE BIND 与 MODEL 类型不一致时 router.CREATE 不得为空")
-		} else if !ok && len(router.CREATE) > 0 {
+		} else if ok && len(router.CREATE) > 0 {
 			return fmt.Errorf("CREATE_ONE BIND 与 MODEL 类型 一致时 router.CREATE 不得有值")
 		}
 	}
@@ -396,7 +396,7 @@ func check(router *Router) error {
 		}
 		if ok := reflect.DeepEqual(router.Bind, router.MODEL); !ok && len(router.UPDATE) == 0 {
 			return fmt.Errorf("UPDATE_ONE BIND 与 MODEL 类型不一致时 router.UPDATE 不得为空")
-		} else if !ok && len(router.UPDATE) > 0 {
+		} else if ok && len(router.UPDATE) > 0 {
 			return fmt.Errorf("UPDATE_ONE BIND 与 MODEL 类型 一致时 router.UPDATE 不得有值")
 		}
 	}
