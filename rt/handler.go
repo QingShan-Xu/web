@@ -67,15 +67,15 @@ func handler(router *Router) gin.HandlerFunc {
 		fmt.Printf("%+v", bindData)
 		dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(bindData)}
 
-		var modelVal reflect.Value
+		var modelValPtr reflect.Value
 		var model interface{}
 		if router.MODEL != nil {
 			_modelTpe := reflect.TypeOf(router.MODEL)
 			if _modelTpe.Kind() == reflect.Pointer {
 				_modelTpe = _modelTpe.Elem()
 			}
-			modelVal = reflect.New(_modelTpe)
-			model = modelVal.Interface()
+			modelValPtr = reflect.New(_modelTpe)
+			model = modelValPtr.Interface()
 		}
 
 		db := cf.ORMDB.Session(&gorm.Session{})
@@ -162,7 +162,7 @@ func handler(router *Router) gin.HandlerFunc {
 		}
 
 		if router.Type == TYPE.GET_LIST {
-			modelListVal := reflect.SliceOf(modelVal.Elem().Type())
+			modelListVal := reflect.SliceOf(modelValPtr.Elem().Type())
 			modelList := reflect.New(modelListVal).Interface()
 			var total int64
 
@@ -203,19 +203,25 @@ func handler(router *Router) gin.HandlerFunc {
 			if isSame {
 				result = db.Create(bindData)
 			} else {
+				modelVal := modelValPtr.Elem()
 				for k, v := range router.CREATE {
 					createData, err := dynamicBindStruct.GetField(v)
-					if err != nil {
-						res.FailBackend(fmt.Errorf("请求值 %s 缺失", k))
-					} else if createData == nil {
+
+					if createData == nil {
 						continue
-					} else {
-						field := modelVal.FieldByName(k)
-						if !field.CanSet() {
-							res.FailBackend(fmt.Errorf("%s 不可修改", k))
-						}
-						field.Set(reflect.ValueOf(createData))
 					}
+
+					if err != nil {
+						res.FailBackend(fmt.Errorf("请求值 %s 缺失", k)).SendAbort(ctx)
+						return
+					}
+
+					field := modelVal.FieldByName(k)
+					if !field.CanSet() {
+						res.FailBackend(fmt.Errorf("%s 不可修改", k)).SendAbort(ctx)
+						return
+					}
+					field.Set(reflect.ValueOf(createData))
 				}
 				result = db.Create(model)
 			}
