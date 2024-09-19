@@ -383,8 +383,10 @@ func check(router *Router) error {
 	}
 
 	if router.Type == TYPE.CREATE_ONE {
-		if ok := reflect.DeepEqual(router.Bind, router.MODEL); !ok && len(router.SELECT) == 0 {
-			return fmt.Errorf("CREATE_ONE BIND 与 MODEL 类型不一致时 SELECT 不得为空")
+		if ok := reflect.DeepEqual(router.Bind, router.MODEL); !ok && len(router.CREATE) == 0 {
+			return fmt.Errorf("CREATE_ONE BIND 与 MODEL 类型不一致时 router.CREATE 不得为空")
+		} else if !ok && len(router.CREATE) > 0 {
+			return fmt.Errorf("CREATE_ONE BIND 与 MODEL 类型 一致时 router.CREATE 不得有值")
 		}
 	}
 
