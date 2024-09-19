@@ -65,11 +65,13 @@ type Router struct {
 	MODEL         interface{}
 	WHERE         map[string]string
 	ORDER         map[string]string
-	SELECT        map[string]string
+	SELECT        []string
 	PRELOAD       []string
 	JOINS         []string
 
-	Type string
+	Type   string
+	UPDATE map[string]string
+	CREATE map[string]string
 }
 
 type Handler func(C *gin.Context, TX *gorm.DB, bind interface{}) *bm.Res

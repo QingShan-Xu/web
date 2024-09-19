@@ -118,7 +118,7 @@ func handler(router *Router) gin.HandlerFunc {
 		}
 
 		if len(router.SELECT) > 0 {
-			for query := range router.SELECT {
+			for _, query := range router.SELECT {
 				db = db.Select(query)
 			}
 		}
@@ -203,15 +203,18 @@ func handler(router *Router) gin.HandlerFunc {
 			if isSame {
 				result = db.Create(bindData)
 			} else {
-				for selectQuery := range router.SELECT {
-					selectData, err := dynamicBindStruct.GetField(selectQuery)
+				for k, v := range router.CREATE {
+					createData, err := dynamicBindStruct.GetField(v)
 					if err != nil {
-						res.FailBackend(fmt.Errorf("请求值 %s 缺失", selectQuery))
-					} else if selectData == nil {
+						res.FailBackend(fmt.Errorf("请求值 %s 缺失", k))
+					} else if createData == nil {
 						continue
 					} else {
-						field := modelVal.FieldByName(selectQuery)
-						field.Set(reflect.ValueOf(selectData))
+						field := modelVal.FieldByName(k)
+						if !field.CanSet() {
+							res.FailBackend(fmt.Errorf("%s 不可修改", k))
+						}
+						field.Set(reflect.ValueOf(createData))
 					}
 				}
 				result = db.Create(model)
@@ -246,7 +249,7 @@ func handler(router *Router) gin.HandlerFunc {
 				result = db.Updates(bindData)
 			} else {
 				bind := make(map[string]interface{}, 0)
-				for k, v := range router.SELECT {
+				for k, v := range router.UPDATE {
 					if data, err := dynamicBindStruct.GetField(v); err != nil {
 						res.FailBackend(fmt.Errorf("请求值 %s 缺失", v))
 					} else {
@@ -342,12 +345,9 @@ func check(router *Router) error {
 	}
 
 	if len(router.SELECT) > 0 {
-		for query, data := range router.SELECT {
-			if data == "" || query == "" {
-				log.Fatalf("SELECT 条件值或语句 [%s] 不能为空", query)
-			}
-			if _, err := dynamicBindStruct.GetField(data); err != nil {
-				return fmt.Errorf("SELECT 条件值或语句 %e", err)
+		for _, query := range router.SELECT {
+			if query == "" {
+				log.Fatalf("SELECT 语句 [%s] 不能为空", query)
 			}
 		}
 	}
@@ -392,8 +392,10 @@ func check(router *Router) error {
 		if len(router.WHERE) == 0 {
 			return fmt.Errorf("UPDATE_ONE 时 WHERE 不能为空")
 		}
-		if ok := reflect.DeepEqual(router.Bind, router.MODEL); !ok && len(router.SELECT) == 0 {
-			return fmt.Errorf("UPDATE_ONE BIND 与 MODEL 类型不一致时 SELECT 不得为空")
+		if ok := reflect.DeepEqual(router.Bind, router.MODEL); !ok && len(router.UPDATE) == 0 {
+			return fmt.Errorf("UPDATE_ONE BIND 与 MODEL 类型不一致时 router.UPDATE 不得为空")
+		} else if !ok && len(router.UPDATE) > 0 {
+			return fmt.Errorf("UPDATE_ONE BIND 与 MODEL 类型 一致时 router.UPDATE 不得有值")
 		}
 	}
 
