@@ -113,6 +113,10 @@ func handler(router *Router) gin.HandlerFunc {
 				if bindData == nil || bindQuery == nil {
 					continue
 				}
+				if bindQuery != "desc" && bindQuery != "asc" {
+					res.FailFront(fmt.Errorf("排序参数 %s:%s 错误", query, bindQuery)).SendAbort(ctx)
+					return
+				}
 				db = db.Order(fmt.Sprintf("%s %s", bindData, bindQuery))
 			}
 		}
