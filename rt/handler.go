@@ -98,26 +98,32 @@ func handler(router *Router) gin.HandlerFunc {
 		}
 
 		if len(router.ORDER) > 0 {
-			for data, query := range router.ORDER {
+			sort, sortDataErr := dynamicBindStruct.GetField("Sort")
+			if sortDataErr != nil {
+				res.FailBackend(sortDataErr).SendAbort(ctx)
+				return
+			}
+			if sort != nil {
+				sortData, ok := sort.([]bm.Sort)
+				if !ok {
+					res.FailBackend("请输入正确的排序").SendAbort(ctx)
+					return
+				}
 
-				bindData, bindDataErr := dynamicBindStruct.GetField(data)
-				if bindDataErr != nil {
-					res.FailBackend(bindDataErr).SendAbort(ctx)
-					return
+				if len(sortData) != 0 {
+					for _, orderData := range sortData {
+						if orderData.Sort != "descend" && orderData.Sort != "ascend" {
+							res.FailBackend(fmt.Errorf("排序参数 %s:%s 错误", orderData.SortBy, orderData.Sort)).SendAbort(ctx)
+							return
+						}
+						orderType := orderData.SortBy - 1
+						if orderType >= len(router.ORDER) {
+							res.FailBackend(fmt.Errorf("排序参数 %d 错误", orderType)).SendAbort(ctx)
+							return
+						}
+						db = db.Order(fmt.Sprintf("%s %s", router.ORDER[orderType], orderData.Sort))
+					}
 				}
-				bindQuery, bindQueryErr := dynamicBindStruct.GetField(query)
-				if bindQueryErr != nil {
-					res.FailBackend(bindQueryErr).SendAbort(ctx)
-					return
-				}
-				if bindData == nil || bindQuery == nil {
-					continue
-				}
-				if bindQuery != "desc" && bindQuery != "asc" {
-					res.FailFront(fmt.Errorf("排序参数 %s:%s 错误", query, bindQuery)).SendAbort(ctx)
-					return
-				}
-				db = db.Order(fmt.Sprintf("%s %s", bindData, bindQuery))
 			}
 		}
 
@@ -341,16 +347,9 @@ func check(router *Router) error {
 		}
 	}
 
-	if len(router.ORDER) > 0 {
-		for data, query := range router.ORDER {
-			if _, err := dynamicBindStruct.GetField(data); err != nil {
-				return fmt.Errorf("ORDER 语句 %e", err)
-			}
-			if _, err := dynamicBindStruct.GetField(query); err != nil {
-				return fmt.Errorf("ORDER 条件值 %e", err)
-			}
-		}
-	}
+	// if len(router.ORDER) > 0 {
+
+	// }
 
 	if len(router.SELECT) > 0 {
 		for _, query := range router.SELECT {

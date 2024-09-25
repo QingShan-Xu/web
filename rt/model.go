@@ -63,11 +63,46 @@ type Router struct {
 	// 数据库: 链式条件
 	NoAutoMigrate bool // 不自动迁移, 默认是自动迁移
 	MODEL         interface{}
-	WHERE         map[string]string
-	ORDER         map[string]string
-	SELECT        []string
-	PRELOAD       []string
-	JOINS         []string
+	// key: 数据库字段与条件, value: bind字段
+	//
+	// 例:
+	//	map[string]string{
+	//		"name = ?", "Name"
+	//	}
+	WHERE map[string]string
+	// 每一项为 orm 字段
+	//
+	// 例:
+	//	[]string{
+	//		"Pet.Weight",	// 下标为 0 故 Sort[number][SortBy]中值为 1
+	//		"Age",		// 下标为 1 故 Sort[number][SortBy]中值为 2
+	//	}
+	ORDER []string
+	// key: orm字段, value: bind字段
+	//
+	// 例:
+	//	[]string{
+	//		"Name",
+	//		"Age",
+	//		"Pet.Name",
+	//	}
+	SELECT []string
+	// key: orm字段, value: bind字段
+	//
+	// 例:
+	//	[]string{
+	//		"Pet.Shop",
+	//		"Work",
+	//	}
+	PRELOAD []string
+	// key: orm字段, value: bind字段
+	//
+	// 例:
+	//	[]string{
+	//		"Pet.Shop",
+	//		"Work",
+	//	}
+	JOINS []string
 
 	Type   string
 	UPDATE map[string]string
