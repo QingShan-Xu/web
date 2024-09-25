@@ -113,7 +113,7 @@ func handler(router *Router) gin.HandlerFunc {
 				if len(sortData) != 0 {
 					for _, orderData := range sortData {
 						if orderData.Sort != "descend" && orderData.Sort != "ascend" {
-							res.FailBackend(fmt.Errorf("排序参数 %s:%s 错误", orderData.SortBy, orderData.Sort)).SendAbort(ctx)
+							res.FailBackend(fmt.Errorf("排序参数 %d:%s 错误", orderData.SortBy, orderData.Sort)).SendAbort(ctx)
 							return
 						}
 						orderType := orderData.SortBy - 1
@@ -121,7 +121,7 @@ func handler(router *Router) gin.HandlerFunc {
 							res.FailBackend(fmt.Errorf("排序参数 %d 错误", orderType)).SendAbort(ctx)
 							return
 						}
-						db = db.Order(fmt.Sprintf("%s %s", router.ORDER[orderType], orderData.Sort))
+						db = db.Order(fmt.Sprintf("%s %s", router.ORDER[orderType], bm.SortMapOrder[orderData.Sort]))
 					}
 				}
 			}

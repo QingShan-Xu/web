@@ -16,3 +16,8 @@ type Sort struct {
 	SortBy int    `form:"sort_by" json:"sort_by" bindind:"min=1"`
 	Sort   string `form:"sort" json:"sort" bindind:"containsrune=descend,ascend"`
 }
+
+var SortMapOrder = map[string]string{
+	"ascend":  "ASC",
+	"descend": "DESC",
+}
