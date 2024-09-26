@@ -67,15 +67,16 @@ type Router struct {
 	//
 	// 例:
 	//	map[string]string{
-	//		"name = ?", "Name"
+	//		"name", "Name"
+	//		"age <> ?", "AgeNum"
 	//	}
 	WHERE map[string]string
-	// 每一项为 orm 字段
+	// 每一项为 数据库 字段
 	//
 	// 例:
 	//	[]string{
-	//		"Pet.Weight",	// 下标为 0 故 Sort[number][SortBy]中值为 1
-	//		"Age",		// 下标为 1 故 Sort[number][SortBy]中值为 2
+	//		"pet.weight",	// 下标为 0 故 Sort[number][SortBy]中值为 1
+	//		"age",		// 下标为 1 故 Sort[number][SortBy]中值为 2
 	//	}
 	ORDER []string
 	// key: orm字段, value: bind字段
@@ -87,7 +88,7 @@ type Router struct {
 	//		"Pet.Name",
 	//	}
 	SELECT []string
-	// key: orm字段, value: bind字段
+	// orm字段
 	//
 	// 例:
 	//	[]string{
@@ -95,16 +96,23 @@ type Router struct {
 	//		"Work",
 	//	}
 	PRELOAD []string
+	// JOIN语句
+	//
+	// 例:
+	//	[]string{
+	//		"LEFT JOIN pet ON pet.user_id = user.id",
+	//		"work",
+	//	}
+	JOINS []string
+
+	Type string
 	// key: orm字段, value: bind字段
 	//
 	// 例:
 	//	[]string{
-	//		"Pet.Shop",
-	//		"Work",
+	//		"Name": "Name",
+	//		"Work": "Work",
 	//	}
-	JOINS []string
-
-	Type   string
 	UPDATE map[string]string
 	CREATE map[string]string
 }
