@@ -55,10 +55,10 @@ type Router struct {
 	Children []Router
 
 	// 子路由
-	Method          string          // 请求方法 rt.Method.GET
-	Handler         Handler         // 处理函数
-	OriginalHandler gin.HandlerFunc // 原始gin处理函数
-	Bind            interface{}     // 请求参数 struct{ Name string `json:"name" form:"name"` }
+	Method          string                                                      // 请求方法 rt.Method.GET
+	Handler         func(C *gin.Context, TX *gorm.DB, bind interface{}) *bm.Res // 处理函数
+	OriginalHandler gin.HandlerFunc                                             // 原始gin处理函数
+	Bind            interface{}                                                 // 请求参数 struct{ Name string `json:"name" form:"name"` }
 
 	// 数据库: 链式条件
 	NoAutoMigrate bool // 不自动迁移, 默认是自动迁移
@@ -114,7 +114,12 @@ type Router struct {
 	//		"Work": "Work",
 	//	}
 	UPDATE map[string]string
+	// key: orm字段, value: bind字段
+	//
+	// 例:
+	//	[]string{
+	//		"Name": "Name",
+	//		"Work": "Work",
+	//	}
 	CREATE map[string]string
 }
-
-type Handler func(C *gin.Context, TX *gorm.DB, bind interface{}) *bm.Res
