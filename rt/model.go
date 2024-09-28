@@ -64,12 +64,13 @@ type Router struct {
 	NoAutoMigrate bool // 不自动迁移, 默认是自动迁移
 	MODEL         interface{}
 	// key: 数据库字段与条件, value: bind字段
+	//
 	// 如果 value 为切片, 将遍历 value 执行 相同 key
+	//
 	// 例:
 	//	map[string]string{
 	//		"name", "Name"
-	//		"age <> ?", "AgeNum"
-	//		"age <> ?", "AgeNum"
+	//		"age <> ?", "AgeNum.$len" // .$len获取长度
 	//	}
 	WHERE map[string]string
 	// 每一项为 数据库 字段
