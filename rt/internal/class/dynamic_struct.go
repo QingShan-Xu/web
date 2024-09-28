@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 type DynamicStruct struct {
 	Value reflect.Value
+	Ctx   *gin.Context
 }
 
 // GetField 根据路径获取字段或键值
@@ -17,6 +20,22 @@ func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
 
 	for i, part := range parts {
 		val = dereferencePointer(val)
+
+		if !val.IsValid() {
+			break
+		}
+
+		if strings.HasPrefix(part, "@") {
+			if i != 0 {
+				return nil, fmt.Errorf("@ 前缀只能用于第一个字段")
+			}
+			ginData, isExist := ds.Ctx.Get(part[1:])
+			if !isExist {
+				return nil, fmt.Errorf("gin 上下文中不存在键 %s", part[1:])
+			}
+			newData := DynamicStruct{Value: reflect.ValueOf(ginData), Ctx: ds.Ctx}
+			return newData.GetField(strings.Join(parts[1:], "."))
+		}
 
 		// 检查是否是 $len 操作
 		if part == "$len" {

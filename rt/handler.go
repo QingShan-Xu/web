@@ -64,7 +64,7 @@ func handler(router *Router) gin.HandlerFunc {
 				return
 			}
 		}
-		dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(bindData)}
+		dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(bindData), Ctx: ctx}
 
 		var modelValPtr reflect.Value
 		var model interface{}
