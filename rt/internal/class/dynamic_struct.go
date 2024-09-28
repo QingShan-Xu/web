@@ -100,7 +100,7 @@ func dereferencePointer(val reflect.Value) reflect.Value {
 	if val.Kind() == reflect.Pointer && !val.IsNil() {
 		return val.Elem()
 	}
-	return val
+	return reflect.ValueOf(nil)
 }
 
 // parseIndex 解析字符串为索引
