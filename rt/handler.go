@@ -92,7 +92,9 @@ func handler(router *Router) gin.HandlerFunc {
 				} else if bindData == nil {
 					continue
 				} else if reflect.ValueOf(bindData).Kind() == reflect.Slice {
-
+					for i := 0; i < len(bindData.([]interface{})); i++ {
+						db = db.Where(query, bindData.([]interface{})[i])
+					}
 				} else {
 					db = db.Where(query, bindData)
 				}
