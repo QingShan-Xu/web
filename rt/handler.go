@@ -97,7 +97,7 @@ func handler(router *Router) gin.HandlerFunc {
 						for i := 0; i < queryNums; i++ {
 							data[i] = bindDataVal.Field(i).Interface()
 						}
-						db = db.Where(query, data)
+						db = db.Where(query, data...)
 					}
 				} else {
 					queryNums := strings.Count(query, "?")
@@ -105,7 +105,7 @@ func handler(router *Router) gin.HandlerFunc {
 					for i := 0; i < queryNums; i++ {
 						data[i] = bindData
 					}
-					db = db.Where(query, data)
+					db = db.Where(query, data...)
 				}
 			}
 		}
