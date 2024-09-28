@@ -5,5 +5,5 @@ import (
 )
 
 func Init(route *Router) {
-	register(cf.GinGroup, route)
+	register(cf.GinGroup, route, nil)
 }

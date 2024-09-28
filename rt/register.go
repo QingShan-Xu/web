@@ -2,12 +2,13 @@ package rt
 
 import (
 	"log"
+	"strings"
 
 	"github.com/QingShan-Xu/xjh/cf"
 	"github.com/gin-gonic/gin"
 )
 
-func register(pGroupRouter *gin.RouterGroup, regRouter *Router) {
+func register(pGroupRouter *gin.RouterGroup, regRouter *Router, pName []string) {
 	isGRoup := len(regRouter.Children) > 0
 
 	if isGRoup {
@@ -17,16 +18,18 @@ func register(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 			return
 		}
 
+		pName = append(pName, regRouter.Path)
+
 		// 递归地为每个子路由注册。
 		for _, child := range regRouter.Children {
-			register(groupRouter, &child)
+			register(groupRouter, &child, pName)
 		}
 	} else {
-		registerRouter(pGroupRouter, regRouter)
+		registerRouter(pGroupRouter, regRouter, pName)
 	}
 }
 
-func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
+func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router, pName []string) {
 	var name string
 
 	if regRouter.Name != "" {
@@ -34,6 +37,9 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router) {
 	} else {
 		name = regRouter.Path
 	}
+
+	pName = append(pName, name)
+	name = strings.Join(pName, " > ")
 
 	if regRouter.MODEL != nil && !regRouter.NoAutoMigrate {
 		if err := cf.ORMDB.AutoMigrate(regRouter.MODEL); err != nil {

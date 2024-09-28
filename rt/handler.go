@@ -91,6 +91,8 @@ func handler(router *Router) gin.HandlerFunc {
 					return
 				} else if bindData == nil {
 					continue
+				} else if reflect.ValueOf(bindData).Kind() == reflect.Slice {
+
 				} else {
 					db = db.Where(query, bindData)
 				}
@@ -347,9 +349,11 @@ func check(router *Router) error {
 		}
 	}
 
-	// if len(router.ORDER) > 0 {
-
-	// }
+	if len(router.ORDER) > 0 {
+		if _, err := dynamicBindStruct.GetField("Sort"); err != nil {
+			return fmt.Errorf("ORDER  %e", err)
+		}
+	}
 
 	if len(router.SELECT) > 0 {
 		for _, query := range router.SELECT {

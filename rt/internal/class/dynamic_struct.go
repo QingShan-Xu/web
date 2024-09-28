@@ -15,9 +15,22 @@ func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
 	parts := strings.Split(path, ".")
 	val := ds.Value
 
-	for _, part := range parts {
+	for i, part := range parts {
 		// 提前解引用指针
 		val = dereferencePointer(val)
+
+		// 检查是否是 $len 操作
+		if part == "$len" {
+			if i != len(parts)-1 {
+				return nil, fmt.Errorf("$len 必须是路径的最后一部分")
+			}
+			switch val.Kind() {
+			case reflect.Slice, reflect.Array, reflect.Map, reflect.String:
+				return val.Len(), nil
+			default:
+				return nil, fmt.Errorf("无法获取类型 %s 的长度", val.Kind())
+			}
+		}
 
 		// 根据类型处理字段或键的访问
 		switch val.Kind() {
