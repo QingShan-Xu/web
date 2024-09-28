@@ -101,7 +101,6 @@ func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
 	}
 
 	// 最终检查是否仍然是指针，如果是 nil 则返回 nil
-	val = dereferencePointer(val)
 	if val.Kind() == reflect.Invalid {
 		return nil, nil
 	}
