@@ -85,32 +85,36 @@ func handler(router *Router) gin.HandlerFunc {
 
 		if len(router.WHERE) > 0 {
 			for query, data := range router.WHERE {
-				if bindData, err := dynamicBindStruct.GetField(data); err != nil {
+				bindData, err := dynamicBindStruct.GetField(data)
+				if err != nil {
 					res.FailBackend(err).SendAbort(ctx)
 					return
-				} else if bindData == nil {
+				}
+				if bindData == nil {
 					continue
-				} else if strings.Contains(data, ".int") {
-					bindDataVal := reflect.ValueOf(bindData)
-					if bindDataVal.Kind() != reflect.Slice {
-						res.FailBackend(fmt.Errorf("请求值 %s 不是数组", data)).SendAbort(ctx)
+				}
+
+				bindDataVal := reflect.ValueOf(bindData)
+				if strings.HasSuffix(data, ".$int") {
+					if bindDataVal.Kind() != reflect.Slice && bindDataVal.Kind() != reflect.Array {
+						res.FailBackend(fmt.Errorf("$int 操作应用于非切片/数组类型")).SendAbort(ctx)
 						return
 					}
-					for i := 0; i < bindDataVal.NumField(); i++ {
-						queryNums := strings.Count(query, "?")
-						data := make([]interface{}, queryNums)
-						for i := 0; i < queryNums; i++ {
-							data[i] = bindDataVal.Field(i).Interface()
-						}
-						db = db.Where(query, data...)
+					for i := 0; i < bindDataVal.Len(); i++ {
+						item := bindDataVal.Index(i).Interface()
+						db = db.Where(query, item)
 					}
 				} else {
 					queryNums := strings.Count(query, "?")
-					data := make([]interface{}, queryNums)
-					for i := 0; i < queryNums; i++ {
-						data[i] = bindData
+					if queryNums > 1 {
+						data := make([]interface{}, queryNums)
+						for i := 0; i < queryNums; i++ {
+							data[i] = bindData
+						}
+						db = db.Where(query, data...)
+					} else {
+						db = db.Where(query, bindData)
 					}
-					db = db.Where(query, data...)
 				}
 			}
 		}

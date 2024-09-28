@@ -16,14 +16,10 @@ func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
 	val := ds.Value
 
 	for i, part := range parts {
-		// 提前解引用指针
 		val = dereferencePointer(val)
 
 		// 检查是否是 $len 操作
 		if part == "$len" {
-			if val.IsNil() {
-				return nil, nil
-			}
 			if i != len(parts)-1 {
 				return nil, fmt.Errorf("$len 必须是路径的最后一部分")
 			}
@@ -35,6 +31,32 @@ func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
 			}
 		}
 
+		// 处理 $int 操作
+		if part == "$int" {
+			switch val.Kind() {
+			case reflect.Slice, reflect.Array:
+				result := make([]interface{}, val.Len())
+				for j := 0; j < val.Len(); j++ {
+					item := val.Index(j)
+					if i == len(parts)-1 {
+						// 如果 $int 是最后一部分，直接返回元素
+						result[j] = item.Interface()
+					} else {
+						// 如果 $int 后面还有路径，继续处理
+						itemDS := &DynamicStruct{Value: item}
+						fieldValue, err := itemDS.GetField(strings.Join(parts[i+1:], "."))
+						if err != nil {
+							return nil, fmt.Errorf("处理切片/数组的第 %d 个元素时出错: %v", j, err)
+						}
+						result[j] = fieldValue
+					}
+				}
+				return result, nil
+			default:
+				return nil, fmt.Errorf("类型 %s 不是数组或切片", val.Kind())
+			}
+		}
+
 		// 根据类型处理字段或键的访问
 		switch val.Kind() {
 		case reflect.Map:
@@ -42,9 +64,6 @@ func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
 		case reflect.Struct:
 			val = getFieldByNameOrEmbedded(val, part)
 		case reflect.Slice, reflect.Array:
-			if part == "int" {
-				break
-			}
 			index, err := parseIndex(part, path)
 			if err != nil {
 				return nil, err
@@ -57,9 +76,8 @@ func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
 			return nil, fmt.Errorf("路径 %s: 类型 %s 无法处理", path, val.Kind())
 		}
 
-		// 检查值的有效性
 		if !val.IsValid() {
-			return nil, fmt.Errorf("路径 %s: 找不到字段或键 %s", path, part)
+			return nil, fmt.Errorf("路径 %s: 字段 %s 不存在", path, part)
 		}
 	}
 
