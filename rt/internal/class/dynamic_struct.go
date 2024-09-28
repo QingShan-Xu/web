@@ -21,6 +21,9 @@ func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
 
 		// 检查是否是 $len 操作
 		if part == "$len" {
+			if val.IsNil() {
+				return 0, nil
+			}
 			if i != len(parts)-1 {
 				return nil, fmt.Errorf("$len 必须是路径的最后一部分")
 			}
