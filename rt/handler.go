@@ -90,7 +90,12 @@ func handler(router *Router) gin.HandlerFunc {
 					return
 				} else if bindData == nil {
 					continue
-				} else if bindDataVal := reflect.ValueOf(bindData); bindDataVal.Kind() == reflect.Slice {
+				} else if strings.Contains(data, ".int") {
+					bindDataVal := reflect.ValueOf(bindData)
+					if bindDataVal.Kind() != reflect.Slice {
+						res.FailBackend(fmt.Errorf("请求值 %s 不是数组", data)).SendAbort(ctx)
+						return
+					}
 					for i := 0; i < bindDataVal.NumField(); i++ {
 						queryNums := strings.Count(query, "?")
 						data := make([]interface{}, queryNums)

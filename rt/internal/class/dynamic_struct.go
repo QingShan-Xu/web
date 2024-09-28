@@ -42,6 +42,9 @@ func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
 		case reflect.Struct:
 			val = getFieldByNameOrEmbedded(val, part)
 		case reflect.Slice, reflect.Array:
+			if part == "int" {
+				break
+			}
 			index, err := parseIndex(part, path)
 			if err != nil {
 				return nil, err
