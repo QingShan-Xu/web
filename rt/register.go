@@ -41,7 +41,7 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router, pName []st
 	name = ""
 	for _, pNameItem := range pName {
 		if pNameItem != "" {
-			name += pNameItem + "."
+			name += pNameItem + " > "
 		}
 	}
 
