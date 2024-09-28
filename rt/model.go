@@ -67,6 +67,8 @@ type Router struct {
 	//
 	// 如果 value 为切片, 将遍历 value 执行 相同 key
 	//
+	// 如果有 n 个 ? ,将生成 n 个value
+	//
 	// 例:
 	//	map[string]string{
 	//		"name", "Name"
