@@ -2,7 +2,6 @@ package rt
 
 import (
 	"log"
-	"strings"
 
 	"github.com/QingShan-Xu/xjh/cf"
 	"github.com/gin-gonic/gin"
@@ -39,7 +38,12 @@ func registerRouter(pGroupRouter *gin.RouterGroup, regRouter *Router, pName []st
 	}
 
 	pName = append(pName, name)
-	name = strings.Join(pName, " > ")
+	name = ""
+	for _, pNameItem := range pName {
+		if pNameItem != "" {
+			name += pNameItem + "."
+		}
+	}
 
 	if regRouter.MODEL != nil && !regRouter.NoAutoMigrate {
 		if err := cf.ORMDB.AutoMigrate(regRouter.MODEL); err != nil {
