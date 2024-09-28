@@ -16,6 +16,9 @@ type Res struct {
 	fileName string
 }
 
+func (response *Res) New() *Res {
+	return response
+}
 func (response *Res) SucJson(data interface{}, msg ...any) *Res {
 
 	if msg == nil {
