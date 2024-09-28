@@ -64,7 +64,6 @@ func handler(router *Router) gin.HandlerFunc {
 				return
 			}
 		}
-		fmt.Printf("%+v", bindData)
 		dynamicBindStruct := class.DynamicStruct{Value: reflect.ValueOf(bindData)}
 
 		var modelValPtr reflect.Value
