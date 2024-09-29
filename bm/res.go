@@ -33,14 +33,14 @@ func (response *Res) SucJson(data interface{}, msg ...any) *Res {
 	return response
 }
 
-func (response *Res) SucFile(filePath string, fileName string, msg ...any) *Res {
+func (response *Res) SucFile(filePath string, hopeName string, msg ...any) *Res {
 	if msg == nil {
 		msg = append(msg, "下载成功")
 	}
 
 	response.Code = 200
 	response.filePath = filePath
-	response.hopeName = fileName
+	response.hopeName = hopeName
 	response.Msg = fmt.Sprint(msg...)
 
 	return response
