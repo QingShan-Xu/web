@@ -18,10 +18,10 @@ func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
 	parts := strings.Split(path, ".")
 	val := ds.Value
 
-	if strings.HasPrefix(path, "@") {
+	if strings.HasPrefix(path, "@") && ds.Ctx != nil {
 		ginData, isExist := ds.Ctx.Get(path[1:])
 		if !isExist {
-			return nil, fmt.Errorf("不存在键 %s", path[1:])
+			return nil, nil
 		}
 		return ginData, nil
 	}
