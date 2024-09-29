@@ -13,7 +13,7 @@ type Res struct {
 	Callback string      `json:"callback"`
 
 	filePath string
-	fileName string
+	hopeName string
 }
 
 func NewRes() *Res {
@@ -40,7 +40,7 @@ func (response *Res) SucFile(filePath string, fileName string, msg ...any) *Res 
 
 	response.Code = 200
 	response.filePath = filePath
-	response.fileName = fileName
+	response.hopeName = fileName
 	response.Msg = fmt.Sprint(msg...)
 
 	return response
@@ -76,11 +76,14 @@ func (response *Res) Send(c *gin.Context) {
 	if response.Code == 0 {
 		c.JSON(500, response)
 	}
-	if response.filePath != "" && response.fileName != "" {
+	if response.filePath != "" {
+		if response.hopeName == "" {
+			response.hopeName = response.filePath
+		}
 		// 设置下载的标头
 		c.Header("Content-Description", "File Transfer")
 		c.Header("Content-Transfer-Encoding", "binary")
-		c.Header("Content-Disposition", "attachment; filename="+response.fileName)
+		c.Header("Content-Disposition", "attachment; filename="+response.hopeName)
 		c.Header("Content-Type", "application/octet-stream")
 		c.Header("Content-Length", "0")
 		// 将文件作为响应发送
