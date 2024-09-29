@@ -21,7 +21,7 @@ func (ds *DynamicStruct) GetField(path string) (interface{}, error) {
 	if strings.HasPrefix(path, "@") && ds.Ctx != nil {
 		ginData, isExist := ds.Ctx.Get(path[1:])
 		if !isExist {
-			return nil, nil
+			return nil, fmt.Errorf("不存在键 %s", path[1:])
 		}
 		return ginData, nil
 	}
