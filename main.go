@@ -1,6 +1,12 @@
-package test
+package main
 
-// package main
+import (
+	"net/http"
+
+	"github.com/QingShan-Xu/web/gm"
+	"github.com/QingShan-Xu/web/rt"
+	"github.com/go-chi/chi/v5/middleware"
+)
 
 // import (
 // 	"github.com/QingShan-Xu/web/bm"
@@ -71,12 +77,49 @@ package test
 // 	},
 // }
 
-// func main() {
-// 	gin := gin.Default()
-// 	rootGroup := gin.Group("/")
-// 	DB, _ := gorm.Open(mysql.Open("root:xjh123321@tcp(127.0.0.1:3306)/go-learn?charset=utf8mb4&parseTime=true&loc=Local"), &gorm.Config{CreateBatchSize: 1000})
-// 	cf.Init(rootGroup, DB.Debug(), &cf.CfgRegist{})
-// 	rt.Init(&router)
+var router = rt.Router{
+	Path: "/",
+	Children: []rt.Router{
+		{
+			Name: "宠物",
+			Path: "pet",
+			Children: []rt.Router{
+				{
+					Name:   "新建",
+					Path:   "",
+					Method: "POST",
+				},
+				{
+					Name:   "拿列表",
+					Path:   "",
+					Method: "GET",
+				},
+			},
+		},
+		{
+			Name:   "测试",
+			Path:   "ping",
+			Method: rt.METHOD.GET,
+			Handler: func(w http.ResponseWriter, r *http.Request) error {
+				if r.Method == "GET" || r.Method == "HEAD" {
+					w.Header().Set("Content-Type", "text/plain")
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte("."))
+					return nil
+				}
+				return nil
+			},
+		},
+	},
+	Middlewares: []rt.Middlewares{
+		middleware.Logger,
+		middleware.CleanPath,
+	},
+}
 
-// 	gin.Run(":8080")
-// }
+func main() {
+	gm.Start(gm.Cfg{
+		FileName: "app",
+		FilePath: []string{"."},
+	}, router)
+}
