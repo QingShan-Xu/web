@@ -88,6 +88,9 @@ var router = rt.Router{
 					Name:   "新建",
 					Path:   "",
 					Method: "POST",
+					Handler: func(w http.ResponseWriter, r *http.Request) error {
+						return nil
+					},
 				},
 				{
 					Name:   "拿列表",
