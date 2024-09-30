@@ -3,10 +3,10 @@ package test
 // package main
 
 // import (
-// 	"github.com/QingShan-Xu/xjh/bm"
-// 	"github.com/QingShan-Xu/xjh/cf"
-// 	"github.com/QingShan-Xu/xjh/rt"
-// 	"github.com/QingShan-Xu/xjh/test"
+// 	"github.com/QingShan-Xu/web/bm"
+// 	"github.com/QingShan-Xu/web/cf"
+// 	"github.com/QingShan-Xu/web/rt"
+// 	"github.com/QingShan-Xu/web/test"
 // 	"github.com/gin-gonic/gin"
 // 	"gorm.io/driver/mysql"
 // 	"gorm.io/gorm"

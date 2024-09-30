@@ -9,9 +9,9 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/QingShan-Xu/xjh/bm"
-	"github.com/QingShan-Xu/xjh/cf"
-	"github.com/QingShan-Xu/xjh/rt/internal/class"
+	"github.com/QingShan-Xu/web/bm"
+	"github.com/QingShan-Xu/web/cf"
+	"github.com/QingShan-Xu/web/rt/internal/class"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"

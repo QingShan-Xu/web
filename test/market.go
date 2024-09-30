@@ -1,6 +1,6 @@
 package test
 
-import "github.com/QingShan-Xu/xjh/bm"
+import "github.com/QingShan-Xu/web/bm"
 
 var D database
 

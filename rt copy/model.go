@@ -1,7 +1,7 @@
 package rt
 
 import (
-	"github.com/QingShan-Xu/xjh/bm"
+	"github.com/QingShan-Xu/web/bm"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -10,17 +10,6 @@ import (
 // METHOD 是一个包含 HTTP 方法常量的结构体，用于在代码中统一引用 HTTP 方法名。
 //
 // 定义了常见的四种 HTTP 方法：GET、POST、PUT、DELETE，
-var METHOD = struct {
-	GET    string
-	POST   string
-	PUT    string
-	DELETE string
-}{
-	GET:    "GET",
-	POST:   "POST",
-	PUT:    "PUT",
-	DELETE: "DELETE",
-}
 
 var TYPE = struct {
 	GET_LIST   string
