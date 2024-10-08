@@ -5,7 +5,6 @@ import (
 
 	"github.com/QingShan-Xu/web/gm"
 	"github.com/QingShan-Xu/web/rt"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 // import (
@@ -99,30 +98,15 @@ var router = rt.Router{
 				},
 			},
 		},
-		{
-			Name:   "测试",
-			Path:   "ping",
-			Method: rt.METHOD.GET,
-			Handler: func(w http.ResponseWriter, r *http.Request) error {
-				if r.Method == "GET" || r.Method == "HEAD" {
-					w.Header().Set("Content-Type", "text/plain")
-					w.WriteHeader(http.StatusOK)
-					w.Write([]byte("."))
-					return nil
-				}
-				return nil
-			},
-		},
-	},
-	Middlewares: []rt.Middlewares{
-		middleware.Logger,
-		middleware.CleanPath,
 	},
 }
 
 func main() {
-	gm.Start(gm.Cfg{
-		FileName: "app",
-		FilePath: []string{"."},
-	}, router)
+	gm.Start(
+		gm.Cfg{
+			FileName: "app",
+			FilePath: []string{"."},
+		},
+		router,
+	)
 }

@@ -8,20 +8,33 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 )
+
+var DB *gorm.DB
 
 type (
 	// 中间件
 	Middlewares func(next http.Handler) http.Handler
 	// 路由
 	Router struct {
-		Name        string        // 路由名称
-		Path        string        // 路由路径
-		Middlewares []Middlewares // 中间件
-		Children    []Router      // 子路由
-		Method      string        // 请求方法
-		Handler     Handler       // 处理函数
-		Bind        interface{}   // 参数绑定
+		Name        string                                   // 路由名称
+		Path        string                                   // 路由路径
+		Middlewares []Middlewares                            // 中间件
+		Children    []Router                                 // 子路由
+		Method      string                                   // 请求方法
+		Handle      func(http.ResponseWriter, *http.Request) // 处理函数
+		// 参数绑定
+		//
+		//	uri // ID int `bind:"uri"` = /pet/{id}
+		//	params
+		//	form
+		//	json
+		Bind interface{}
+
+		MODEL         interface{} // 数据库模型
+		NoAutoMigrate bool        // 不自动迁移该模型
+		WHERE         map[string][]string
 	}
 )
 
@@ -151,7 +164,7 @@ func (curRT *Router) genRouterItem(rtList []*Router, pCR chi.Router, prefix stri
 	if rtInfo != "" {
 		fmt.Println(prefix + getTreeSymbol(isLast) + rtInfo)
 	}
-	pCR.Method(curRT.Method, curRT.Path, curRT.Handler)
+	pCR.Method(curRT.Method, curRT.Path, curRT.Handler())
 }
 
 func (rt *Router) checkGroupRouter() error {

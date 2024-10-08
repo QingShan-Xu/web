@@ -1,4 +1,4 @@
-package dynamicstruct
+package ds
 
 import "reflect"
 
