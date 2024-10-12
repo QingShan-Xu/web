@@ -12,12 +12,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-func startRouter(cfg Cfg, router rt.Router) {
+func startRouter(cfg Cfg, router *rt.Router) {
 
 	// 中间件
 	router.Middlewares = append(
 		router.Middlewares,
-		[]rt.Middlewares{
+		[]func(http.Handler) http.Handler{
 			middleware.Logger,
 			middleware.CleanPath,
 		}...,
@@ -30,12 +30,14 @@ func startRouter(cfg Cfg, router rt.Router) {
 		log.Fatalf("%s: App.Ping is not bool", strings.Join(cfg.FilePath, "/")+cfg.FileName+cfg.FileType)
 	}
 	if ping {
-		router.Children = append(router.Children, rt.PingRouter)
+		// router.Children = append(router.Children, rt.PingRouter)
 	}
 
 	// 注册
-	r := router.Register()
-
+	r, err := rt.Register(router)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
 	// 监听端口
 	port, ok := viper.Get("App.Port").(string)
 	if !ok {

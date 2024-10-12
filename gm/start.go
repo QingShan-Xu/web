@@ -6,7 +6,7 @@ import (
 
 func Start(
 	cfg Cfg,
-	router rt.Router,
+	router *rt.Router,
 ) {
 	cfg.init()
 	startRouter(cfg, router)

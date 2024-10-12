@@ -1,8 +1,6 @@
 package main
 
 import (
-	"net/http"
-
 	"github.com/QingShan-Xu/web/gm"
 	"github.com/QingShan-Xu/web/rt"
 )
@@ -80,20 +78,35 @@ var router = rt.Router{
 	Path: "/",
 	Children: []rt.Router{
 		{
-			Name: "宠物",
-			Path: "pet",
+			Path: "/pet",
 			Children: []rt.Router{
 				{
-					Name:   "新建",
-					Path:   "",
+					Path:   "/",
 					Method: "POST",
-					Handler: func(w http.ResponseWriter, r *http.Request) error {
-						return nil
-					},
+					Bind: struct {
+						Name string `json:"name" bind:"strint"`
+						Age  string `query:"age"`
+					}{},
 				},
 				{
 					Name:   "拿列表",
-					Path:   "",
+					Path:   "/",
+					Method: "GET",
+				},
+			},
+		},
+		{
+			Name: "宠物2",
+			Path: "/pet2",
+			Children: []rt.Router{
+				{
+					Name:   "新建",
+					Path:   "/",
+					Method: "POST",
+				},
+				{
+					Name:   "拿列表",
+					Path:   "/",
 					Method: "GET",
 				},
 			},
@@ -107,6 +120,6 @@ func main() {
 			FileName: "app",
 			FilePath: []string{"."},
 		},
-		router,
+		&router,
 	)
 }
