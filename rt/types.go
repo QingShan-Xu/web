@@ -15,7 +15,8 @@ type Router struct {
 	Bind          interface{}                       // 参数绑定 tag有 uri, query, form, json, bind:strint
 	MODEL         interface{}                       // 数据库模型
 	NoAutoMigrate bool                              // 不自动迁移该模型
-	WHERE         map[string][]string
+	SCOPES        []Scope
+	WHERE         [][]string
 
 	completePath string // 完整路径，从根节点到当前节点。
 	completeName string // 完整名称，从根节点到当前节点。

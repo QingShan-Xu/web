@@ -14,8 +14,8 @@ import (
 
 type (
 
-	// 数据绑定策略的接口
-	bindingStrategy interface {
+	// 数据绑定接口
+	BindingStrategy interface {
 		bind(r *http.Request, reader ds.Reader, bindFieldSlice []bindField) error
 	}
 
@@ -40,9 +40,10 @@ func NewDataBinder() *dataBinder {
 	return &dataBinder{}
 }
 
-func (binder *dataBinder) bindData(curRT *Router, r *http.Request) (ds.Reader, error) {
+func (binder *dataBinder) BindData(curRT *Router, r *http.Request) (interface{}, error) {
 	bind := reflect.New(reflect.TypeOf(curRT.Bind)).Interface()
-	reader := ds.NewReader(&bind)
+
+	reader := ds.NewReader(bind)
 
 	bindFieldSlice := binder.getBindFieldSlice(reader)
 
@@ -64,7 +65,18 @@ func (binder *dataBinder) bindData(curRT *Router, r *http.Request) (ds.Reader, e
 		formBind.bind(r, reader, bindFieldSlice)
 	}
 
-	return reader, nil
+	validateZhInfo := ValidateStruct(bind)
+	if validateZhInfo != nil {
+		var values []string
+		for k, v := range validateZhInfo {
+			snakeK := ToSnakeCase(k)
+			values = append(values, strings.ReplaceAll(fmt.Sprintf("%v", v), k, snakeK))
+		}
+		validateZhErr := fmt.Errorf("%s", strings.Join(values, ", "))
+		return nil, validateZhErr
+	}
+
+	return bind, nil
 }
 
 func (binder *dataBinder) getBindFieldSlice(reader ds.Reader) []bindField {

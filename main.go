@@ -83,15 +83,17 @@ var router = rt.Router{
 				{
 					Path:   "/",
 					Method: "POST",
-					Bind: struct {
-						Name string `json:"name" bind:"strint"`
-						Age  string `query:"age"`
-					}{},
 				},
 				{
 					Name:   "拿列表",
 					Path:   "/",
 					Method: "GET",
+					Bind: struct {
+						Name string `query:"name"`
+					}{},
+					WHERE: [][]string{
+						{"name = ?", "Name"},
+					},
 				},
 			},
 		},

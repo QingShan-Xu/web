@@ -3,6 +3,7 @@ package rt
 import (
 	"fmt"
 	"log"
+	"reflect"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -29,10 +30,67 @@ func Register(rootRouter *Router) (chi.Router, error) {
 		return nil, fmt.Errorf("生成路由时出错: %w", err)
 	}
 
+	if err := genDBModel(rootRouter); err != nil {
+		return nil, err
+	}
+
+	if err := genQuery(rootRouter); err != nil {
+		return nil, err
+	}
+
 	// 输出给定路由节点的完整树形结构信息。
 	displayCompleteInfo(rootRouter)
 
 	return chiRouter, nil
+}
+
+func genQuery(currentRouter *Router) error {
+	if isGroup(*currentRouter) {
+		for i := range currentRouter.Children {
+			child := &currentRouter.Children[i]
+			if err := genQuery(child); err != nil {
+				return err
+			}
+		}
+	}
+
+	if currentRouter.MODEL == nil {
+		return nil
+	}
+
+	query := NewQuery()
+
+	if currentRouter.WHERE != nil {
+		for _, where := range currentRouter.WHERE {
+			scope, err := query.WHERE(where)
+			if err != nil {
+				return err
+			}
+			currentRouter.SCOPES = append(currentRouter.SCOPES, scope)
+		}
+	}
+
+	return nil
+}
+
+func genDBModel(currentRouter *Router) error {
+	if isGroup(*currentRouter) {
+		for i := range currentRouter.Children {
+			child := &currentRouter.Children[i]
+			if err := genDBModel(child); err != nil {
+				return err
+			}
+		}
+	}
+
+	if currentRouter.MODEL == nil || currentRouter.NoAutoMigrate {
+		return nil
+	}
+	// 迁移
+	if err := DB.AutoMigrate(reflect.New(reflect.Indirect(reflect.ValueOf(currentRouter.MODEL)).Type()).Interface()); err != nil {
+		return fmt.Errorf("%s (%s): gorm AutoMigrate err: %v", currentRouter.Path, currentRouter.Name, err)
+	}
+	return nil
 }
 
 // generateChiRouter 递归地根据 Router 配置构建 chi 路由。
