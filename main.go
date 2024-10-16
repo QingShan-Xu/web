@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/QingShan-Xu/web/bm"
 	"github.com/QingShan-Xu/web/gm"
 	"github.com/QingShan-Xu/web/rt"
 )
@@ -74,6 +75,11 @@ import (
 // 	},
 // }
 
+var Pet struct {
+	bm.Model
+	Name string
+}
+
 var router = rt.Router{
 	Path: "/",
 	Children: []rt.Router{
@@ -88,6 +94,7 @@ var router = rt.Router{
 					Name:   "拿列表",
 					Path:   "/",
 					Method: "GET",
+					MODEL:  Pet,
 					Bind: struct {
 						Name string `query:"name"`
 					}{},

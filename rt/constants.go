@@ -1,7 +1,5 @@
 package rt
 
-import "gorm.io/gorm"
-
 var METHOD = struct {
 	GET, POST, HEAD, PUT, PATCH, DELETE, OPTIONS, TRACE, CONNECT string
 }{
@@ -15,5 +13,3 @@ var METHOD = struct {
 	TRACE:   "TRACE",
 	CONNECT: "CONNECT",
 }
-
-var DB *gorm.DB

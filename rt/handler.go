@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/QingShan-Xu/web/db"
 	"github.com/QingShan-Xu/web/ds"
 	"gorm.io/gorm"
 )
@@ -23,21 +24,22 @@ func (curRT *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	bindReader := ds.NewReader(bindData)
 
-	db := DB.Session(&gorm.Session{})
+	currentDB := db.DB.GORM.Session(&gorm.Session{})
 
 	scopes := []func(db *gorm.DB) *gorm.DB{}
 	for _, scope := range curRT.SCOPES {
 		scopes = append(scopes, scope(bindReader))
 	}
 
-	db.Scopes(scopes...)
+	currentDB.Scopes(scopes...)
 
 	var aaaa = interface{}(nil)
-	if err := db.Find(&aaaa).Error; err != nil {
+	if err := currentDB.Find(&aaaa).Error; err != nil {
 		print(1)
 	}
 
 	fmt.Printf("%+v,%v", bindData, err)
+	print(1)
 
 	// if err := h(); err != nil {
 	// 	// handle returned error here.

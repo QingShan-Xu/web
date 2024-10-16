@@ -5,6 +5,7 @@ import (
 	"log"
 	"reflect"
 
+	"github.com/QingShan-Xu/web/db"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -54,12 +55,11 @@ func genQuery(currentRouter *Router) error {
 		}
 	}
 
-	if currentRouter.MODEL == nil {
-		return nil
+	if currentRouter.WHERE != nil && currentRouter.MODEL == nil {
+		return fmt.Errorf("%s(%s) 使用 QUERY 时 Router.Model 不能为空", currentRouter.completePath, currentRouter.completeName)
 	}
 
 	query := NewQuery()
-
 	if currentRouter.WHERE != nil {
 		for _, where := range currentRouter.WHERE {
 			scope, err := query.WHERE(where)
@@ -87,7 +87,7 @@ func genDBModel(currentRouter *Router) error {
 		return nil
 	}
 	// 迁移
-	if err := DB.AutoMigrate(reflect.New(reflect.Indirect(reflect.ValueOf(currentRouter.MODEL)).Type()).Interface()); err != nil {
+	if err := db.DB.GORM.AutoMigrate(reflect.New(reflect.Indirect(reflect.ValueOf(currentRouter.MODEL)).Type()).Interface()); err != nil {
 		return fmt.Errorf("%s (%s): gorm AutoMigrate err: %v", currentRouter.Path, currentRouter.Name, err)
 	}
 	return nil
