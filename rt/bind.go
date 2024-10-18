@@ -41,23 +41,28 @@ func NewDataBinder() *dataBinder {
 }
 
 func (binder *dataBinder) BindData(curRT *Router, r *http.Request) (interface{}, error) {
-	bind := reflect.New(reflect.TypeOf(curRT.Bind)).Interface()
+	bindData := reflect.New(reflect.TypeOf(curRT.Bind)).Interface()
 
-	reader := ds.NewReader(bind)
+	reader := ds.NewReader(bindData)
 
 	bindFieldSlice := binder.getBindFieldSlice(reader)
 
 	uriBind := uriBindingStrategy{}
-	uriBind.bind(r, reader, bindFieldSlice)
+	if err := uriBind.bind(r, reader, bindFieldSlice); err != nil {
+		return nil, err
+	}
 
 	queryBind := queryBindingStrategy{}
-	queryBind.bind(r, reader, bindFieldSlice)
+
+	if err := queryBind.bind(r, reader, bindFieldSlice); err != nil {
+		return nil, err
+	}
 
 	contentType := r.Header.Get("Content-Type")
 
 	if strings.HasPrefix(contentType, "application/json") {
 		jsonBind := jsonBindingStrategy{}
-		jsonBind.bind(r, &bind)
+		jsonBind.bind(r, &bindData)
 	}
 
 	if strings.HasPrefix(contentType, "application/x-www-form-urlencoded") {
@@ -65,7 +70,7 @@ func (binder *dataBinder) BindData(curRT *Router, r *http.Request) (interface{},
 		formBind.bind(r, reader, bindFieldSlice)
 	}
 
-	validateZhInfo := ValidateStruct(bind)
+	validateZhInfo := ValidateStruct(bindData)
 	if validateZhInfo != nil {
 		var values []string
 		for k, v := range validateZhInfo {
@@ -76,7 +81,7 @@ func (binder *dataBinder) BindData(curRT *Router, r *http.Request) (interface{},
 		return nil, validateZhErr
 	}
 
-	return bind, nil
+	return bindData, nil
 }
 
 func (binder *dataBinder) getBindFieldSlice(reader ds.Reader) []bindField {
@@ -105,6 +110,7 @@ func (binder *dataBinder) getBindFieldSlice(reader ds.Reader) []bindField {
 }
 
 func (q queryBindingStrategy) bind(r *http.Request, reader ds.Reader, bindFieldSlice []bindField) error {
+
 	queryParams := r.URL.Query()
 
 	for _, bindField := range bindFieldSlice {
@@ -118,9 +124,13 @@ func (q queryBindingStrategy) bind(r *http.Request, reader ds.Reader, bindFieldS
 		}
 
 		if bindField.FieldKind == reflect.Array || bindField.FieldKind == reflect.Slice {
-			reader.SetValue(bindField.FieldName, values)
+			if err := reader.SetValue(bindField.FieldName, values); err != nil {
+				return err
+			}
 		} else {
-			reader.SetValue(bindField.FieldName, values[0])
+			if err := reader.SetValue(bindField.FieldName, values[0]); err != nil {
+				return err
+			}
 		}
 
 	}

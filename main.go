@@ -75,7 +75,7 @@ import (
 // 	},
 // }
 
-var Pet struct {
+type Pet struct {
 	bm.Model
 	Name string
 }
@@ -87,20 +87,26 @@ var router = rt.Router{
 			Path: "/pet",
 			Children: []rt.Router{
 				{
+					Name:   "新建",
 					Path:   "/",
 					Method: "POST",
+					MODEL:  Pet{},
+					Bind: struct {
+						Name string `query:"name" validate:"required"`
+					}{},
+					CREATE_ONE: map[string]string{
+						"Name": "Name",
+					},
 				},
 				{
 					Name:   "拿列表",
 					Path:   "/",
 					Method: "GET",
-					MODEL:  Pet,
+					MODEL:  Pet{},
 					Bind: struct {
-						Name string `query:"name"`
+						bm.Pagination
 					}{},
-					WHERE: [][]string{
-						{"name = ?", "Name"},
-					},
+					GET_LIST: true,
 				},
 			},
 		},

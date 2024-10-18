@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"time"
+
+	"github.com/QingShan-Xu/web/bm"
 )
 
 type (
@@ -77,9 +79,20 @@ func NewReader(value interface{}) Reader {
 	if typeOf.Kind() == reflect.Struct {
 		for i := 0; i < valueOf.NumField(); i++ {
 			field := typeOf.Field(i)
-			fields[field.Name] = fieldImpl{
-				field: field,
-				value: valueOf.Field(i),
+			value := valueOf.Field(i)
+			if field.Anonymous {
+				for i := 0; i < value.NumField(); i++ {
+					currentField := field.Type.Field(i)
+					fields[currentField.Name] = fieldImpl{
+						field: currentField,
+						value: value.Field(i),
+					}
+				}
+			} else {
+				fields[field.Name] = fieldImpl{
+					field: field,
+					value: valueOf.Field(i),
+				}
 			}
 		}
 	}
@@ -124,10 +137,15 @@ func (r readImpl) SetValue(name string, newVal interface{}) error {
 	field := r.fields[name]
 	value := reflect.ValueOf(newVal)
 
+	// 特殊处理 FlexibleInt
+	if flexInt, ok := newVal.(bm.FlexibleInt); ok {
+		value = reflect.ValueOf(flexInt.Int())
+	}
+
 	// 转换新值类型以匹配字段类型
 	if value.Type() != field.value.Type() {
 		if !value.Type().ConvertibleTo(field.value.Type()) {
-			return fmt.Errorf("field %s type mismatch: expected %s, got %s", name, field.value.Type(), value.Type())
+			return fmt.Errorf("%s 类型错误: 需要 %s, 获得 %s", name, field.value.Type(), value.Type())
 		}
 		value = value.Convert(field.value.Type())
 	}

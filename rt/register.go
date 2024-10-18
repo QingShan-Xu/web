@@ -55,11 +55,19 @@ func genQuery(currentRouter *Router) error {
 		}
 	}
 
+	query := NewQuery()
+	// MODEL
+	if currentRouter.MODEL != nil {
+		scope, err := query.MODEL(currentRouter.MODEL)
+		if err != nil {
+			return err
+		}
+		currentRouter.SCOPES = append(currentRouter.SCOPES, scope)
+	}
+	// WHERE
 	if currentRouter.WHERE != nil && currentRouter.MODEL == nil {
 		return fmt.Errorf("%s(%s) 使用 QUERY 时 Router.Model 不能为空", currentRouter.completePath, currentRouter.completeName)
 	}
-
-	query := NewQuery()
 	if currentRouter.WHERE != nil {
 		for _, where := range currentRouter.WHERE {
 			scope, err := query.WHERE(where)
