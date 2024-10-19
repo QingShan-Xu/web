@@ -27,7 +27,10 @@ func (curRT *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Printf("%+v", bindData)
 
-	bindReader := ds.NewReader(bindData)
+	bindReader, err := ds.NewStructReader(bindData)
+	if err != nil {
+		response.FailBackend(err).Send()
+	}
 
 	currentDB := db.DB.GORM.Session(&gorm.Session{})
 
@@ -52,136 +55,130 @@ func (curRT *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if curRT.CREATE_ONE != nil {
 		finisherParams, err := curRT.genCreateOneParams(bindReader)
 		if err != nil {
-			response.FailFront(err.Error()).Send()
+			response.FailFront(err).Send()
 			return
 		}
 		if err := currentDB.Create(finisherParams).Error; err != nil {
-			response.FailFront(err.Error()).Send()
+			response.FailFront(err).Send()
 			return
 		}
-		response.SucJson(finisherParams)
-	}
-
-	if curRT.UPDATE_ONE != nil {
-		finisherParams, err := curRT.genUpdateOneParams(bindReader)
-		if err != nil {
-			response.FailFront(err.Error()).Send()
-			return
-		}
-		if err := currentDB.Updates(finisherParams).Error; err != nil {
-			response.FailFront(err.Error()).Send()
-			return
-		}
-	}
-
-	if curRT.DELETE_ONE {
-		newOrm := reflect.New(reflect.TypeOf(curRT.MODEL)).Interface()
-		if err := currentDB.Delete(newOrm).Error; err != nil {
-			response.FailFront(err.Error()).Send()
-			return
-		}
-	}
-
-	if curRT.GET_ONE {
-		newOrm := reflect.New(reflect.TypeOf(curRT.MODEL)).Interface()
-		firstQ := currentDB.First(newOrm)
-		if firstQ.Error != nil {
-			response.FailFront(firstQ.Error.Error()).Send()
-			return
-		}
-		if firstQ.RowsAffected == 0 {
-			response.FailFront("没有对应数据").Send()
-			return
-		}
-	}
-
-	if curRT.GET_LIST {
-		pageSize := 10
-		if bindReader.HasField("PageSize") {
-			pageSize = bindReader.GetField("PageSize").Int()
-		}
-		current := 1
-		if bindReader.HasField("current") {
-			current = bindReader.GetField("Current").Int()
-		}
-
-		var total int64
-		if err := currentDB.Model(curRT.MODEL).Count(&total); err != nil {
-			response.FailBackend("查询失败").Send()
-		}
-		if total == 0 {
-			response.SucList(bm.ResList{
-				Current:  current,
-				Data:     []interface{}{},
-				PageSize: pageSize,
-				Total:    total,
-			})
-			return
-		}
-
-		currentDB.Scopes(PaginationScope(pageSize, current))
-		newOrm := reflect.New(reflect.SliceOf(reflect.TypeOf(curRT.MODEL))).Interface()
-		if err := currentDB.Find(newOrm).Error; err != nil {
-			response.FailBackend("查询失败").Send()
-			return
-		}
-
-		response.SucList(bm.ResList{
-			Current:  current,
-			Data:     newOrm,
-			PageSize: pageSize,
-			Total:    total,
-		})
+		response.SucJson(finisherParams).Send()
 		return
 	}
+
+	// if curRT.UPDATE_ONE != nil {
+	// 	finisherParams, err := curRT.genUpdateOneParams(bindReader)
+	// 	if err != nil {
+	// 		response.FailFront(err.Error()).Send()
+	// 		return
+	// 	}
+	// 	if err := currentDB.Updates(finisherParams).Error; err != nil {
+	// 		response.FailFront(err.Error()).Send()
+	// 		return
+	// 	}
+	// }
+
+	// if curRT.DELETE_ONE {
+	// 	newOrm := reflect.New(reflect.TypeOf(curRT.MODEL)).Interface()
+	// 	if err := currentDB.Delete(newOrm).Error; err != nil {
+	// 		response.FailFront(err.Error()).Send()
+	// 		return
+	// 	}
+	// }
+
+	// if curRT.GET_ONE {
+	// 	newOrm := reflect.New(reflect.TypeOf(curRT.MODEL)).Interface()
+	// 	firstQ := currentDB.First(newOrm)
+	// 	if firstQ.Error != nil {
+	// 		response.FailFront(firstQ.Error.Error()).Send()
+	// 		return
+	// 	}
+	// 	if firstQ.RowsAffected == 0 {
+	// 		response.FailFront("没有对应数据").Send()
+	// 		return
+	// 	}
+	// }
+
+	// if curRT.GET_LIST {
+	// 	pageSize := 10
+	// 	if bindReader.HasField("PageSize") {
+	// 		pageSize = bindReader.GetField("PageSize").Int()
+	// 	}
+	// 	current := 1
+	// 	if bindReader.HasField("current") {
+	// 		current = bindReader.GetField("Current").Int()
+	// 	}
+
+	// 	var total int64
+	// 	if err := currentDB.Model(curRT.MODEL).Count(&total); err != nil {
+	// 		response.FailBackend("查询失败").Send()
+	// 	}
+	// 	if total == 0 {
+	// 		response.SucList(bm.ResList{
+	// 			Current:  current,
+	// 			Data:     []interface{}{},
+	// 			PageSize: pageSize,
+	// 			Total:    total,
+	// 		})
+	// 		return
+	// 	}
+
+	// 	currentDB.Scopes(PaginationScope(pageSize, current))
+	// 	newOrm := reflect.New(reflect.SliceOf(reflect.TypeOf(curRT.MODEL))).Interface()
+	// 	if err := currentDB.Find(newOrm).Error; err != nil {
+	// 		response.FailBackend("查询失败").Send()
+	// 		return
+	// 	}
+
+	// 	response.SucList(bm.ResList{
+	// 		Current:  current,
+	// 		Data:     newOrm,
+	// 		PageSize: pageSize,
+	// 		Total:    total,
+	// 	})
+	// 	return
+	// }
 }
 
-func (curRT *Router) genCreateOneParams(bindReader ds.Reader) (interface{}, error) {
+func (curRT *Router) genCreateOneParams(bindReader *ds.StructReader) (interface{}, error) {
 	newOrm := reflect.New(reflect.TypeOf(curRT.MODEL)).Interface()
-	ormReader := ds.NewReader(newOrm)
+	ormReader, err := ds.NewStructReader(newOrm)
+	if err != nil {
+		return nil, err
+	}
 	for ormName, bindName := range curRT.CREATE_ONE {
-		bindField := bindReader.GetField(bindName)
-		if bindField == nil {
+		bindField, err := bindReader.GetFieldByName(bindName)
+		if err != nil {
 			return nil, fmt.Errorf("请求值 %s 缺失", bindName)
 		}
-		if !ormReader.HasField(ormName) {
-			return nil, fmt.Errorf("后台值 %s 缺失", ormName)
+		ormField, err := ormReader.GetFieldByName(ormName)
+		if err != nil {
+			return nil, fmt.Errorf("后台字段 %s 缺失", ormName)
 		}
-		if err := ormReader.SetValue(ormName, bindField.Interface()); err != nil {
-			return nil, err
+		if !ormField.Value.CanSet() {
+			return nil, fmt.Errorf("orm字段 %s 不可设置", ormName)
 		}
+		ormField.Value.Set(bindField.Value)
 	}
 	fmt.Printf("%+v", newOrm)
 	return newOrm, nil
 }
 
-func (curRT *Router) genUpdateOneParams(bindReader ds.Reader) (interface{}, error) {
-	newOrm := reflect.New(reflect.TypeOf(curRT.MODEL)).Interface()
-	ormReader := ds.NewReader(newOrm)
-	for ormName, bindName := range curRT.UPDATE_ONE {
-		bindField := bindReader.GetField(bindName)
-		if bindField == nil {
-			return nil, fmt.Errorf("请求值 %s 缺失", bindName)
-		}
-		if !ormReader.HasField(ormName) {
-			return nil, fmt.Errorf("后台值 %s 缺失", ormName)
-		}
-		if err := ormReader.SetValue(ormName, bindField.Interface()); err != nil {
-			return nil, err
-		}
-	}
-	fmt.Printf("%+v", newOrm)
-	return newOrm, nil
-}
-
-// func (curRT *Router) Handler(w http.ResponseWriter, r *http.Request) {
-
-// // WHERE语句
-// if curRT.WHERE != nil && curRT.MODEL == nil {
-// 	log.Fatalf("%s: MODEL required when WHERE not nil", curRT.Path)
-// }
-// for query, data := range curRT.WHERE {
-// 	db = db.Where(query, data)
-// }
-
+// func (curRT *Router) genUpdateOneParams(bindReader ds.Reader) (interface{}, error) {
+// 	newOrm := reflect.New(reflect.TypeOf(curRT.MODEL)).Interface()
+// 	ormReader := ds.NewReader(newOrm)
+// 	for ormName, bindName := range curRT.UPDATE_ONE {
+// 		bindField := bindReader.GetField(bindName)
+// 		if bindField == nil {
+// 			return nil, fmt.Errorf("请求值 %s 缺失", bindName)
+// 		}
+// 		if !ormReader.HasField(ormName) {
+// 			return nil, fmt.Errorf("后台值 %s 缺失", ormName)
+// 		}
+// 		// if err := ormReader.SetValue(ormName, bindField.Interface()); err != nil {
+// 		// 	return nil, err
+// 		// }
+// 	}
+// 	fmt.Printf("%+v", newOrm)
+// 	return newOrm, nil
 // }

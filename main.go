@@ -16,64 +16,64 @@ import (
 // 	"gorm.io/gorm"
 // )
 
-// var router = rt.Router{
-// 	Name: "宠物",
-// 	Path: "pet",
-// 	Children: []rt.Router{
-// 		{
-// 			Name:   "新建",
-// 			Path:   "",
-// 			Bind:   test.D.Pet,
-// 			MODEL:  test.D.Pet,
-// 			Method: "POST",
-// 			Type:   rt.TYPE.CREATE_ONE,
-// 		},
-// 		{
-// 			Name: "查询",
-// 			Path: ":id",
-// 			Bind: struct {
-// 				ID int `uri:"id" binding:"required"`
-// 			}{},
-// 			MODEL:  test.D.Pet,
-// 			Method: "GET",
-// 			WHERE:  map[string]string{"id = ?": "ID"},
-// 			Type:   rt.TYPE.GET_ONE,
-// 		},
-// 		{
-// 			Name:   "更新",
-// 			Path:   ":id",
-// 			Bind:   test.API.ReqUpdatePet,
-// 			MODEL:  test.D.Pet,
-// 			Method: "PUT",
-// 			WHERE:  map[string]string{"id": "ID"},
-// 			SELECT: map[string]string{
-// 				"name": "Name",
-// 			},
-// 			Type: rt.TYPE.UPDATE_ONE,
-// 		},
-// 		{
-// 			Name: "删除",
-// 			Path: ":id",
-// 			Bind: struct {
-// 				ID int `uri:"id" binding:"required"`
-// 			}{},
-// 			MODEL:  test.D.Pet,
-// 			Method: "DELETE",
-// 			WHERE:  map[string]string{"id": "ID"},
-// 			Type:   rt.TYPE.DELETE_ONE,
-// 		},
-// 		{
-// 			Name: "查列表",
-// 			Path: "list",
-// 			Bind: struct {
-// 				bm.Pagination
-// 			}{},
-// 			MODEL:  test.D.Pet,
-// 			Method: "GET",
-// 			Type:   rt.TYPE.GET_LIST,
-// 		},
-// 	},
-// }
+//	var router = rt.Router{
+//		Name: "宠物",
+//		Path: "pet",
+//		Children: []rt.Router{
+//			{
+//				Name:   "新建",
+//				Path:   "",
+//				Bind:   test.D.Pet,
+//				MODEL:  test.D.Pet,
+//				Method: "POST",
+//				Type:   rt.TYPE.CREATE_ONE,
+//			},
+//			{
+//				Name: "查询",
+//				Path: ":id",
+//				Bind: struct {
+//					ID int `uri:"id" binding:"required"`
+//				}{},
+//				MODEL:  test.D.Pet,
+//				Method: "GET",
+//				WHERE:  map[string]string{"id = ?": "ID"},
+//				Type:   rt.TYPE.GET_ONE,
+//			},
+//			{
+//				Name:   "更新",
+//				Path:   ":id",
+//				Bind:   test.API.ReqUpdatePet,
+//				MODEL:  test.D.Pet,
+//				Method: "PUT",
+//				WHERE:  map[string]string{"id": "ID"},
+//				SELECT: map[string]string{
+//					"name": "Name",
+//				},
+//				Type: rt.TYPE.UPDATE_ONE,
+//			},
+//			{
+//				Name: "删除",
+//				Path: ":id",
+//				Bind: struct {
+//					ID int `uri:"id" binding:"required"`
+//				}{},
+//				MODEL:  test.D.Pet,
+//				Method: "DELETE",
+//				WHERE:  map[string]string{"id": "ID"},
+//				Type:   rt.TYPE.DELETE_ONE,
+//			},
+//			{
+//				Name: "查列表",
+//				Path: "list",
+//				Bind: struct {
+//					bm.Pagination
+//				}{},
+//				MODEL:  test.D.Pet,
+//				Method: "GET",
+//				Type:   rt.TYPE.GET_LIST,
+//			},
+//		},
+//	}
 
 type Pet struct {
 	bm.Model
@@ -92,10 +92,11 @@ var router = rt.Router{
 					Method: "POST",
 					MODEL:  Pet{},
 					Bind: struct {
-						Name string `query:"name" validate:"required"`
+						// Name string `query:"name" validate:"required"`
+						Type string `bind:"type"`
 					}{},
 					CREATE_ONE: map[string]string{
-						"Name": "Name",
+						"ID": "Type",
 					},
 				},
 				{

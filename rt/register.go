@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/QingShan-Xu/web/db"
+	"github.com/QingShan-Xu/web/ds"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -55,7 +56,14 @@ func genQuery(currentRouter *Router) error {
 		}
 	}
 
-	query := NewQuery()
+	var bindReader *ds.StructReader
+	if currentRouter.Bind != nil {
+		var err error
+		if bindReader, err = ds.NewStructReader(currentRouter.Bind); err != nil {
+			return err
+		}
+	}
+	query := NewQuery(bindReader)
 	// MODEL
 	if currentRouter.MODEL != nil {
 		scope, err := query.MODEL(currentRouter.MODEL)
@@ -67,6 +75,10 @@ func genQuery(currentRouter *Router) error {
 	// WHERE
 	if currentRouter.WHERE != nil && currentRouter.MODEL == nil {
 		return fmt.Errorf("%s(%s) 使用 QUERY 时 Router.Model 不能为空", currentRouter.completePath, currentRouter.completeName)
+	}
+	// WHERE
+	if currentRouter.WHERE != nil && currentRouter.Bind == nil {
+		return fmt.Errorf("%s(%s) 使用 QUERY 时 Router.Bind 不能为空", currentRouter.completePath, currentRouter.completeName)
 	}
 	if currentRouter.WHERE != nil {
 		for _, where := range currentRouter.WHERE {

@@ -10,12 +10,13 @@ import (
 )
 
 type (
-	Scope func(reader ds.Reader) func(*gorm.DB) *gorm.DB
+	Scope func(reader *ds.StructReader) func(*gorm.DB) *gorm.DB
 	Query struct {
+		bindReader *ds.StructReader
 	}
 )
 
-func NewQuery() *Query {
+func NewQuery(bindReader *ds.StructReader) *Query {
 	return &Query{}
 }
 
@@ -27,7 +28,7 @@ func (q *Query) MODEL(model interface{}) (Scope, error) {
 
 	modelPtr := reflect.New(modelInstance.Type()).Interface()
 
-	scope := func(reader ds.Reader) func(db *gorm.DB) *gorm.DB {
+	scope := func(reader *ds.StructReader) func(db *gorm.DB) *gorm.DB {
 		return func(db *gorm.DB) *gorm.DB {
 			return db.Model(modelPtr)
 		}
@@ -45,12 +46,20 @@ func (q *Query) WHERE(whereQuery []string) (Scope, error) {
 		return nil, fmt.Errorf("where 语句 必须包含两个或两个以上元素")
 	}
 
-	scope := func(reader ds.Reader) func(db *gorm.DB) *gorm.DB {
+	fieldValues := []interface{}{}
+	for _, fieldName := range whereQuery[1:] {
+		if _, err := q.bindReader.GetFieldByName(fieldName); err != nil {
+			return nil, err
+		}
+	}
+
+	scope := func(reader *ds.StructReader) func(db *gorm.DB) *gorm.DB {
 		return func(db *gorm.DB) *gorm.DB {
-			fieldValues := []interface{}{}
 			for _, fieldName := range whereQuery[1:] {
-				fieldValues = append(fieldValues, reader.GetField(fieldName).Interface())
+				fieldValue, _ := q.bindReader.GetFieldByName(fieldName)
+				fieldValues = append(fieldValues, fieldValue.GetValue())
 			}
+			// 如果有空参数, 不创建scope
 			if slices.Contains(fieldValues, nil) {
 				return db
 			}
