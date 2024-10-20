@@ -1,8 +1,8 @@
 package bm
 
 type Pagination struct {
-	PageSize int `bind:"page_size"`
-	Current  int `bind:"current"`
+	PageSize int `bind:"page_size" json:"page_size"`
+	Current  int `bind:"current" json:"current"`
 }
 
 // SortBy 为 ORDER 值的下标 +1

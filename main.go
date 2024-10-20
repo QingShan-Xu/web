@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/QingShan-Xu/web/bm"
 	"github.com/QingShan-Xu/web/gm"
 	"github.com/QingShan-Xu/web/rt"
@@ -77,6 +79,7 @@ import (
 
 type Pet struct {
 	bm.Model
+	Type string
 	Name string
 }
 
@@ -92,11 +95,54 @@ var router = rt.Router{
 					Method: "POST",
 					MODEL:  Pet{},
 					Bind: struct {
-						// Name string `query:"name" validate:"required"`
-						Type string `bind:"type"`
+						Name string `bind:"name" validate:"required"`
 					}{},
 					CREATE_ONE: map[string]string{
-						"ID": "Type",
+						"Name": "Name",
+					},
+				},
+				{
+					Name:   "修改",
+					Path:   "/{id}",
+					Method: http.MethodPut,
+					MODEL:  Pet{},
+					Bind: struct {
+						ID   string `bind:"id" validate:"required"`
+						Name string `bind:"name"`
+						Type *int   `bind:"type"`
+					}{},
+					UPDATE_ONE: map[string]string{
+						"Name": "Name",
+						"Type": "Type",
+					},
+					WHERE: [][]string{
+						{"id", "ID"},
+					},
+				},
+				{
+					Name:   "详情",
+					Path:   "/{id}",
+					Method: http.MethodGet,
+					MODEL:  Pet{},
+					Bind: struct {
+						ID string `bind:"id" validate:"required"`
+					}{},
+					GET_ONE: true,
+					WHERE: [][]string{
+						{"id", "ID"},
+					},
+				},
+				{
+					Name:   "删除",
+					Path:   "/{id}",
+					Method: http.MethodDelete,
+					MODEL:  Pet{},
+					Bind: struct {
+						ID string `bind:"id" validate:"required"`
+					}{},
+					DELETE_ONE: true,
+					WHERE: [][]string{
+						{"id", "ID"},
 					},
 				},
 				{

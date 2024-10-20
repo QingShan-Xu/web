@@ -18,10 +18,9 @@ type Res struct {
 }
 
 type ResList struct {
-	PageSize int         `json:"page_size"`
-	Current  int         `json:"current"`
-	Data     interface{} `json:"data"`
-	Total    int64       `json:"total"`
+	Pagination
+	Data  interface{} `json:"data"`
+	Total int64       `json:"total"`
 }
 
 const (
