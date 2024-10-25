@@ -1,3 +1,0 @@
-package rt
-
-// middlewares.go

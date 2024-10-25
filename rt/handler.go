@@ -1,3 +1,4 @@
+// Package rt 提供了请求处理的核心逻辑。
 package rt
 
 import (
@@ -12,241 +13,266 @@ import (
 	"gorm.io/gorm"
 )
 
-func (curRT *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// Handler 处理请求的核心逻辑。
+type Handler struct {
+	Router *Router
+}
+
+// ServeHTTP 实现 http.Handler 接口。
+// w: HTTP 响应写入器。
+// r: HTTP 请求。
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var bindData interface{}
 	var err error
 	response := bm.NewRes(w)
 
-	if curRT.Bind != nil {
-		dataBinder := NewDataBinder()
-		bindData, err = dataBinder.BindData(curRT, r)
+	if h.Router.Bind != nil {
+		// 数据绑定和验证。
+		binder := NewBinder()
+		bindData, err = binder.BindAndValidate(h.Router.Bind, r)
 		if err != nil {
 			response.FailFront(err.Error()).Send()
 			return
 		}
 	}
 
-	fmt.Println(fmt.Sprintf("%+v", bindData))
+	fmt.Printf("%+v\n", bindData)
 
+	// 使用 ds 包解析绑定数据。
 	bindReader, err := ds.NewStructReader(bindData)
-
 	if err != nil {
 		response.FailBackend(err).Send()
+		return
 	}
 
 	currentDB := db.DB.GORM.Session(&gorm.Session{})
 
-	scopes := []func(db *gorm.DB) *gorm.DB{}
-	for _, scope := range curRT.SCOPES {
+	// 应用查询范围（Scopes）。
+	var scopes []func(db *gorm.DB) *gorm.DB
+	for _, scope := range h.Router.Scopes {
 		scopes = append(scopes, scope(bindReader))
 	}
-
 	currentDB = currentDB.Scopes(scopes...)
 
-	if err != nil {
-		response.FailBackend().Send()
+	// 检查是否同时设置了多个 Finisher 方法。
+	finisherMethodCount := 0
+	if h.Router.CreateFields != nil {
+		finisherMethodCount++
+	}
+	if h.Router.UpdateFields != nil {
+		finisherMethodCount++
+	}
+	if h.Router.Delete {
+		finisherMethodCount++
+	}
+	if h.Router.GetOne {
+		finisherMethodCount++
+	}
+	if h.Router.GetList {
+		finisherMethodCount++
+	}
+
+	if finisherMethodCount > 1 {
+		fmt.Println("Cannot use multiple finisher methods simultaneously")
+		response.FailBackend("Cannot use multiple finisher methods simultaneously").Send()
 		return
 	}
 
-	if curRT.CREATE_ONE != nil && curRT.UPDATE_ONE != nil && curRT.DELETE_ONE && curRT.GET_ONE && curRT.GET_LIST {
-		fmt.Println("不支持同时使用 Finisher Method")
-		return
-	}
-	if (curRT.CREATE_ONE != nil || curRT.UPDATE_ONE != nil || curRT.DELETE_ONE && curRT.GET_ONE && curRT.GET_LIST) && curRT.MODEL == nil {
-		fmt.Println("使用 Finisher Method 时, rt.MODEL 不能为空")
-		response.FailBackend().Send()
+	if finisherMethodCount > 0 && h.Router.Model == nil {
+		fmt.Println("Router.Model cannot be nil when using finisher methods")
+		response.FailBackend("Router.Model cannot be nil when using finisher methods").Send()
 		return
 	}
 
-	if curRT.CREATE_ONE != nil {
-		finisherParams, err := curRT.genCreateOneParams(bindReader)
+	// 处理各个 Finisher 方法。
+	switch {
+	case h.Router.CreateFields != nil:
+		// 处理创建操作。
+		finisherParams, err := h.genCreateParams(bindReader)
 		if err != nil {
-			response.FailFront(err).Send()
+			response.FailFront(err.Error()).Send()
 			return
 		}
 		if err := currentDB.Create(finisherParams).Error; err != nil {
-			response.FailFront(err).Send()
+			response.FailFront(err.Error()).Send()
 			return
 		}
 		response.SucJson(finisherParams).Send()
 		return
-	}
 
-	if curRT.UPDATE_ONE != nil {
-		newOrm := reflect.New(reflect.TypeOf(curRT.MODEL)).Interface()
-		firstQ := currentDB.First(newOrm)
-		if firstQ.RowsAffected == 0 {
-			response.FailFront("没有对应数据").Send()
-			return
-		}
-		if firstQ.Error != nil {
-			response.FailFront(firstQ.Error.Error()).Send()
+	case h.Router.UpdateFields != nil:
+		// 处理更新操作。
+		newModel := reflect.New(reflect.TypeOf(h.Router.Model)).Interface()
+		if err := currentDB.First(newModel).Error; err != nil {
+			response.FailFront("No corresponding data").Send()
 			return
 		}
 
-		finisherParams, err := curRT.genUpdateOneParams(bindReader, newOrm)
+		finisherParams, err := h.genUpdateParams(bindReader, newModel)
 		if err != nil {
 			response.FailFront(err.Error()).Send()
 			return
 		}
-		if currentDB.Updates(finisherParams).Error != nil {
-			response.FailFront(err).Send()
+		if err := currentDB.Updates(finisherParams).Error; err != nil {
+			response.FailFront(err.Error()).Send()
 			return
 		}
 		response.SucJson(finisherParams).Send()
 		return
-	}
 
-	if curRT.DELETE_ONE {
-		newOrm := reflect.New(reflect.TypeOf(curRT.MODEL)).Interface()
-		firstQ := currentDB.First(newOrm)
-		if firstQ.RowsAffected == 0 {
-			response.FailFront("没有对应数据").Send()
+	case h.Router.Delete:
+		// 处理删除操作。
+		newModel := reflect.New(reflect.TypeOf(h.Router.Model)).Interface()
+		if err := currentDB.First(newModel).Error; err != nil {
+			response.FailFront("No corresponding data").Send()
 			return
 		}
-		if firstQ.Error != nil {
-			response.FailFront(firstQ.Error.Error()).Send()
-			return
-		}
-
-		if err := currentDB.Delete(newOrm).Error; err != nil {
+		if err := currentDB.Delete(newModel).Error; err != nil {
 			response.FailFront(err.Error()).Send()
 			return
 		}
-		response.SucJson(newOrm).Send()
+		response.SucJson(newModel).Send()
 		return
-	}
 
-	if curRT.GET_ONE {
-		newOrm := reflect.New(reflect.TypeOf(curRT.MODEL)).Interface()
-		firstQ := currentDB.First(newOrm)
-		if firstQ.RowsAffected == 0 {
-			response.FailFront("没有对应数据").Send()
+	case h.Router.GetOne:
+		// 处理获取单个记录操作。
+		newModel := reflect.New(reflect.TypeOf(h.Router.Model)).Interface()
+		if err := currentDB.First(newModel).Error; err != nil {
+			response.FailFront("No corresponding data").Send()
 			return
 		}
-		if firstQ.Error != nil {
-			response.FailFront(firstQ.Error.Error()).Send()
-			return
-		}
-		response.SucJson(newOrm).Send()
+		response.SucJson(newModel).Send()
 		return
-	}
 
-	if curRT.GET_LIST {
+	case h.Router.GetList:
+		// 处理获取列表操作。
 		pagination := bm.Pagination{
 			PageSize: 10,
 			Current:  1,
 		}
-		pageSizeField, _ := bindReader.GetFieldByName("PageSize")
-		pageSizeValue := pageSizeField.GetValue()
-		currentField, _ := bindReader.GetFieldByName("Current")
-		currentValue := currentField.GetValue()
 
-		if pageSizeValue != 0 && pageSizeValue.(int) <= 100 {
-			pagination.PageSize = pageSizeValue.(int)
+		if bindReader != nil {
+			// 获取分页参数。
+			if pageSizeField, err := bindReader.GetFieldByName("PageSize"); err == nil {
+				if pageSizeValue, ok := pageSizeField.Value.Interface().(int); ok && pageSizeValue > 0 && pageSizeValue <= 100 {
+					pagination.PageSize = pageSizeValue
+				}
+			}
+			if currentField, err := bindReader.GetFieldByName("Current"); err == nil {
+				if currentValue, ok := currentField.Value.Interface().(int); ok && currentValue > 0 {
+					pagination.Current = currentValue
+				}
+			}
 		}
-		pagination.Current = currentValue.(int)
 
 		var total int64
 		if err := currentDB.Count(&total).Error; err != nil {
-			response.FailBackend("查询失败").Send()
+			response.FailBackend("Query failed").Send()
+			return
 		}
 		if total == 0 {
 			response.SucList(bm.ResList{
 				Pagination: pagination,
 				Data:       []interface{}{},
 				Total:      total,
-			})
+			}).Send()
 			return
 		}
 
-		currentDB.Scopes(PaginationScope(pagination))
-		newOrm := reflect.New(reflect.SliceOf(reflect.TypeOf(curRT.MODEL))).Interface()
-		if err := currentDB.Find(newOrm).Error; err != nil {
-			response.FailBackend("查询失败").Send()
+		currentDB = currentDB.Scopes(PaginationScope(pagination))
+		newModelSlice := reflect.New(reflect.SliceOf(reflect.TypeOf(h.Router.Model))).Interface()
+		if err := currentDB.Find(newModelSlice).Error; err != nil {
+			response.FailBackend("Query failed").Send()
 			return
 		}
 
 		response.SucList(bm.ResList{
 			Pagination: pagination,
-			Data:       newOrm,
+			Data:       newModelSlice,
 			Total:      total,
 		}).Send()
 		return
 	}
 }
 
-func (curRT *Router) genCreateOneParams(bindReader *ds.StructReader) (interface{}, error) {
-	newOrm := reflect.New(reflect.TypeOf(curRT.MODEL)).Interface()
-	ormReader, err := ds.NewStructReader(newOrm)
+// genCreateParams 生成创建操作的参数。
+// bindReader: 绑定数据的结构体读取器。
+// 返回生成的模型实例或错误信息。
+func (h *Handler) genCreateParams(bindReader *ds.StructReader) (interface{}, error) {
+	newModel := reflect.New(reflect.TypeOf(h.Router.Model)).Interface()
+	modelReader, err := ds.NewStructReader(newModel)
 	if err != nil {
 		return nil, err
 	}
 
-	ormMap := map[string]interface{}{}
-	for ormName, bindName := range curRT.CREATE_ONE {
-		if _, err := ormReader.GetFieldByName(ormName); err != nil {
-			return nil, fmt.Errorf("请检查ORM中有无 %s 字段", ormName)
+	modelMap := make(map[string]interface{})
+	for modelField, bindField := range h.Router.CreateFields {
+		if _, err := modelReader.GetFieldByName(modelField); err != nil {
+			return nil, fmt.Errorf("Model lacks field '%s'", modelField)
 		}
-		bindField, err := bindReader.GetFieldByName(bindName)
+		bindValueField, err := bindReader.GetFieldByName(bindField)
 		if err != nil {
-			return nil, fmt.Errorf("请求值 %s 缺失", bindName)
+			return nil, fmt.Errorf("Bind data lacks field '%s'", bindField)
 		}
-		bindValue := bindField.Value.Interface()
+		bindValue := bindValueField.Value.Interface()
 		if bindValue == nil {
 			continue
 		}
-		ormMap[ormName] = bindValue
+		modelMap[modelField] = bindValue
 	}
 
-	decoder, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+	decoderConfig := &mapstructure.DecoderConfig{
 		Squash:               true,
 		WeaklyTypedInput:     true,
 		TagName:              "bind",
 		IgnoreUntaggedFields: true,
-		Result:               newOrm,
-	})
-	if err := decoder.Decode(ormMap); err != nil {
+		Result:               newModel,
+	}
+	decoder, _ := mapstructure.NewDecoder(decoderConfig)
+	if err := decoder.Decode(modelMap); err != nil {
 		return nil, err
 	}
 
-	return newOrm, nil
+	return newModel, nil
 }
 
-func (curRT *Router) genUpdateOneParams(bindReader *ds.StructReader, ormModel interface{}) (interface{}, error) {
-
-	ormReader, err := ds.NewStructReader(ormModel)
+// genUpdateParams 生成更新操作的参数。
+// bindReader: 绑定数据的结构体读取器。
+// model: 当前数据库中已有的模型实例。
+// 返回更新后的模型实例或错误信息。
+func (h *Handler) genUpdateParams(bindReader *ds.StructReader, model interface{}) (interface{}, error) {
+	modelReader, err := ds.NewStructReader(model)
 	if err != nil {
 		return nil, err
 	}
 
-	ormMap := map[string]interface{}{}
-	for ormName, bindName := range curRT.UPDATE_ONE {
-		if _, err := ormReader.GetFieldByName(ormName); err != nil {
-			return nil, fmt.Errorf("rt.MODEL中无 %s 缺失", ormName)
+	modelMap := make(map[string]interface{})
+	for modelField, bindField := range h.Router.UpdateFields {
+		if _, err := modelReader.GetFieldByName(modelField); err != nil {
+			return nil, fmt.Errorf("Model lacks field '%s'", modelField)
 		}
-		bindField, err := bindReader.GetFieldByName(bindName)
+		bindValueField, err := bindReader.GetFieldByName(bindField)
 		if err != nil {
-			return nil, fmt.Errorf("rt.Bind中无 %s 字段", bindName)
+			return nil, fmt.Errorf("Bind data lacks field '%s'", bindField)
 		}
-		bindValue := bindField.Value.Interface()
+		bindValue := bindValueField.Value.Interface()
 		if bindValue == nil {
 			continue
 		}
-		ormMap[ormName] = bindValue
+		modelMap[modelField] = bindValue
 	}
 
-	decoder, _ := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+	decoderConfig := &mapstructure.DecoderConfig{
 		Squash:               true,
 		WeaklyTypedInput:     true,
 		TagName:              "bind",
 		IgnoreUntaggedFields: true,
-		Result:               ormModel,
-	})
-	if err := decoder.Decode(ormMap); err != nil {
+		Result:               model,
+	}
+	decoder, _ := mapstructure.NewDecoder(decoderConfig)
+	if err := decoder.Decode(modelMap); err != nil {
 		return nil, err
 	}
 
-	fmt.Printf("%+v", ormModel)
-	return ormModel, nil
+	return model, nil
 }
