@@ -70,9 +70,7 @@ func Register(rootRouter *Router) (chi.Router, error) {
 	}
 
 	// 生成查询条件。
-	if err := generateQuery(rootRouter); err != nil {
-		return nil, err
-	}
+	generateQuery(rootRouter)
 
 	// 显示完整的路由信息。
 	displayCompleteInfo(rootRouter)

@@ -3,6 +3,7 @@ package rt
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 
 	"github.com/QingShan-Xu/web/bm"
@@ -61,7 +62,7 @@ func (q *query) where(whereQuery []string) (Scope, error) {
 
 	for _, fieldName := range whereQuery[1:] {
 		if _, err := q.bindReader.GetField(fieldName); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%v in Bind but in Where", err)
 		}
 	}
 
@@ -104,19 +105,16 @@ func PaginationScope(pagination bm.Pagination) func(db *gorm.DB) *gorm.DB {
 // generateQuery 生成查询条件。
 // currentRouter: 当前路由器。
 // 返回错误信息（如果有）。
-func generateQuery(currentRouter *Router) error {
+func generateQuery(currentRouter *Router) {
 	if isGroup(*currentRouter) {
 		for i := range currentRouter.Children {
 			child := &currentRouter.Children[i]
-			if err := generateQuery(child); err != nil {
-				return err
-			}
+			generateQuery(child)
 		}
-		return nil
 	}
 
 	if currentRouter.Bind == nil && (currentRouter.Where != nil || currentRouter.Model != nil) {
-		return fmt.Errorf("router '%s' requires Bind when using WHERE or MODEL", currentRouter.completePath)
+		log.Fatalf("router '%s' requires Bind when using WHERE or MODEL", currentRouter.completePath)
 	}
 
 	var bindReader ds.FieldReader
@@ -124,7 +122,7 @@ func generateQuery(currentRouter *Router) error {
 	if currentRouter.Bind != nil {
 		bindReader, err = ds.NewStructReader(currentRouter.Bind)
 		if err != nil {
-			return err
+			log.Fatalf("%v", err)
 		}
 	}
 
@@ -133,23 +131,21 @@ func generateQuery(currentRouter *Router) error {
 	if currentRouter.Model != nil {
 		scope, err := query.model(currentRouter.Model)
 		if err != nil {
-			return err
+			log.Fatalf("%v", err)
 		}
 		currentRouter.Scopes = append(currentRouter.Scopes, scope)
 	}
 
 	if currentRouter.Where != nil {
 		if currentRouter.Model == nil {
-			return fmt.Errorf("router '%s' requires Model when using WHERE", currentRouter.completePath)
+			log.Fatalf("router '%s' requires Model when using WHERE", currentRouter.completePath)
 		}
 		for _, where := range currentRouter.Where {
 			scope, err := query.where(where)
 			if err != nil {
-				return err
+				log.Fatalf("%s(%s) %v", currentRouter.completePath, currentRouter.completeName, err)
 			}
 			currentRouter.Scopes = append(currentRouter.Scopes, scope)
 		}
 	}
-
-	return nil
 }
