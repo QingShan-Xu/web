@@ -3,7 +3,6 @@ package rt
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/QingShan-Xu/web/db"
 )
@@ -23,11 +22,7 @@ func generateDBModel(currentRouter *Router) error {
 	}
 
 	if currentRouter.Model != nil && !currentRouter.NoAutoMigrate {
-		modelType := reflect.TypeOf(currentRouter.Model)
-		if modelType.Kind() != reflect.Ptr {
-			return fmt.Errorf("Model should be a pointer to a struct")
-		}
-		if err := db.DB.GORM.AutoMigrate(currentRouter.Model); err != nil {
+		if err := db.DB.GORM.AutoMigrate(&currentRouter.Model); err != nil {
 			return fmt.Errorf("failed to auto-migrate model for router '%s': %w", currentRouter.completePath, err)
 		}
 	}

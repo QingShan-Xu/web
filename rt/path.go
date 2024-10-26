@@ -40,7 +40,7 @@ func initCompletePathAndName(root *Router) {
 func depthFirstProcess(current *Router, currentPath, currentName, prefix string, isLast bool, infoBuilder *strings.Builder) {
 	// 计算并设置新的完整路径和名称。
 	newPath := removeTrailingSlash(fmt.Sprintf("%s%s", strings.TrimRight(currentPath, "/"), current.Path))
-	newName := fmt.Sprintf("%s%s", strings.TrimRight(currentName, "."), strings.TrimLeft(current.Name, "."))
+	newName := strings.TrimRight(strings.TrimLeft(fmt.Sprintf("%s.%s", currentName, current.Name), "."), ".")
 
 	current.completePath = newPath
 	current.completeName = newName

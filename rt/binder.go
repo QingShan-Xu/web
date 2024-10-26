@@ -15,19 +15,19 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-// Binder 实现了数据绑定和验证的功能。
-type Binder struct{}
+// binder 实现了数据绑定和验证的功能。
+type binder struct{}
 
-// NewBinder 创建一个新的数据绑定器。
-func NewBinder() *Binder {
-	return &Binder{}
+// newBinder 创建一个新的数据绑定器。
+func newBinder() *binder {
+	return &binder{}
 }
 
-// BindAndValidate 绑定请求数据并进行验证。
+// bindAndValidate 绑定请求数据并进行验证。
 // routerBind: 路由绑定的结构体类型。
 // r: HTTP 请求。
 // 返回绑定并验证后的数据或错误信息。
-func (b *Binder) BindAndValidate(routerBind interface{}, r *http.Request) (interface{}, error) {
+func (b *binder) bindAndValidate(routerBind interface{}, r *http.Request) (interface{}, error) {
 	if routerBind == nil {
 		return nil, fmt.Errorf("Router.Bind cannot be nil")
 	}
@@ -52,7 +52,7 @@ func (b *Binder) BindAndValidate(routerBind interface{}, r *http.Request) (inter
 // bindData 绑定请求数据到结构体。
 // r: HTTP 请求。
 // bindValue: 绑定数据的实例。
-func (b *Binder) bindData(r *http.Request, bindValue interface{}) error {
+func (b *binder) bindData(r *http.Request, bindValue interface{}) error {
 	// 配置 mapstructure 解码器。
 	decoderConfig := &mapstructure.DecoderConfig{
 		Squash:               true,
@@ -96,9 +96,15 @@ func (b *Binder) bindData(r *http.Request, bindValue interface{}) error {
 				return fmt.Errorf("failed to read request body: %w", err)
 			}
 			defer r.Body.Close()
+
+			if len(body) == 0 {
+				body = []byte("{}") // 赋值为空的 JSON 对象
+			}
+
 			if err = json.Unmarshal(body, &bodyMap); err != nil {
 				return fmt.Errorf("failed to unmarshal JSON body: %w", err)
 			}
+
 			if err := decoder.Decode(bodyMap); err != nil {
 				return fmt.Errorf("failed to decode JSON body: %w", err)
 			}
@@ -119,7 +125,7 @@ func (b *Binder) bindData(r *http.Request, bindValue interface{}) error {
 
 // validateData 验证绑定的数据。
 // bindValue: 绑定数据的实例。
-func (b *Binder) validateData(bindValue interface{}) error {
+func (b *binder) validateData(bindValue interface{}) error {
 	validationErrors := ValidateStruct(bindValue)
 	if validationErrors == nil {
 		return nil
@@ -130,7 +136,7 @@ func (b *Binder) validateData(bindValue interface{}) error {
 		formattedMsg := strings.ReplaceAll(errMsg, field, snakeField)
 		errorMessages = append(errorMessages, formattedMsg)
 	}
-	return fmt.Errorf(strings.Join(errorMessages, ", "))
+	return fmt.Errorf("%v", strings.Join(errorMessages, ", "))
 }
 
 // valuesToMap 将 url.Values 转换为 map[string]interface{}。

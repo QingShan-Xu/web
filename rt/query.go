@@ -11,26 +11,26 @@ import (
 )
 
 // Scope 定义了数据库查询范围（Scopes）。
-type Scope func(reader *ds.StructReader) func(*gorm.DB) *gorm.DB
+type Scope func(reader ds.FieldReader) func(*gorm.DB) *gorm.DB
 
-// Query 构建数据库查询。
-type Query struct {
-	bindReader *ds.StructReader
+// query 构建数据库查询。
+type query struct {
+	bindReader ds.FieldReader
 }
 
-// NewQuery 创建新的查询构建器。
+// newQuery 创建新的查询构建器。
 // bindReader: 绑定数据的结构体读取器。
 // 返回 Query 实例。
-func NewQuery(bindReader *ds.StructReader) *Query {
-	return &Query{
+func newQuery(bindReader ds.FieldReader) *query {
+	return &query{
 		bindReader: bindReader,
 	}
 }
 
-// Model 指定查询的模型。
+// model 指定查询的模型。
 // model: 数据库模型。
 // 返回 Scope 函数或错误信息。
-func (q *Query) Model(model interface{}) (Scope, error) {
+func (q *query) model(model interface{}) (Scope, error) {
 	modelInstance := reflect.Indirect(reflect.ValueOf(model))
 	if modelInstance.Kind() != reflect.Struct {
 		return nil, fmt.Errorf("Router.Model must be a struct type")
@@ -38,7 +38,7 @@ func (q *Query) Model(model interface{}) (Scope, error) {
 
 	modelPtr := reflect.New(modelInstance.Type()).Interface()
 
-	scope := func(reader *ds.StructReader) func(db *gorm.DB) *gorm.DB {
+	scope := func(reader ds.FieldReader) func(db *gorm.DB) *gorm.DB {
 		return func(db *gorm.DB) *gorm.DB {
 			return db.Model(modelPtr)
 		}
@@ -47,29 +47,29 @@ func (q *Query) Model(model interface{}) (Scope, error) {
 	return scope, nil
 }
 
-// Where 添加查询条件。
+// where 添加查询条件。
 // whereQuery: 查询条件数组。
 // 返回 Scope 函数或错误信息。
-func (q *Query) Where(whereQuery []string) (Scope, error) {
+func (q *query) where(whereQuery []string) (Scope, error) {
 	if whereQuery == nil {
-		return nil, fmt.Errorf("Where parameter cannot be nil")
+		return nil, fmt.Errorf("where parameter cannot be nil")
 	}
 
 	if len(whereQuery) < 2 {
-		return nil, fmt.Errorf("Where clause must contain at least two elements")
+		return nil, fmt.Errorf("where clause must contain at least two elements")
 	}
 
 	for _, fieldName := range whereQuery[1:] {
-		if _, err := q.bindReader.GetFieldByName(fieldName); err != nil {
+		if _, err := q.bindReader.GetField(fieldName); err != nil {
 			return nil, err
 		}
 	}
 
-	return func(reader *ds.StructReader) func(db *gorm.DB) *gorm.DB {
+	return func(reader ds.FieldReader) func(db *gorm.DB) *gorm.DB {
 		fieldValues := []interface{}{}
 		for _, fieldName := range whereQuery[1:] {
-			fieldValue, _ := reader.GetFieldByName(fieldName)
-			fieldValues = append(fieldValues, fieldValue.Value.Interface())
+			fieldValue, _ := reader.GetField(fieldName)
+			fieldValues = append(fieldValues, fieldValue.Interface())
 		}
 		return func(db *gorm.DB) *gorm.DB {
 			if containsNil(fieldValues) {
@@ -119,7 +119,7 @@ func generateQuery(currentRouter *Router) error {
 		return fmt.Errorf("router '%s' requires Bind when using WHERE or MODEL", currentRouter.completePath)
 	}
 
-	var bindReader *ds.StructReader
+	var bindReader ds.FieldReader
 	var err error
 	if currentRouter.Bind != nil {
 		bindReader, err = ds.NewStructReader(currentRouter.Bind)
@@ -128,10 +128,10 @@ func generateQuery(currentRouter *Router) error {
 		}
 	}
 
-	query := NewQuery(bindReader)
+	query := newQuery(bindReader)
 
 	if currentRouter.Model != nil {
-		scope, err := query.Model(currentRouter.Model)
+		scope, err := query.model(currentRouter.Model)
 		if err != nil {
 			return err
 		}
@@ -143,7 +143,7 @@ func generateQuery(currentRouter *Router) error {
 			return fmt.Errorf("router '%s' requires Model when using WHERE", currentRouter.completePath)
 		}
 		for _, where := range currentRouter.Where {
-			scope, err := query.Where(where)
+			scope, err := query.where(where)
 			if err != nil {
 				return err
 			}

@@ -6,15 +6,25 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/QingShan-Xu/web/bm"
 	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 )
+
+type HandlerParams struct {
+	W          http.ResponseWriter
+	R          *http.Request
+	BindReader BindReader
+	Tx         *gorm.DB
+	Res        *bm.Res
+}
 
 // Router 定义了路由器结构体。
 type Router struct {
 	Name          string                            // 路由名称
 	Path          string                            // 路由路径
 	Method        string                            // 请求方法
-	Handler       http.HandlerFunc                  // 处理函数
+	Handler       func(HandlerParams) *bm.Res       // 处理函数
 	Bind          interface{}                       // 请求参数绑定结构体
 	Model         interface{}                       // 数据库模型
 	NoAutoMigrate bool                              // 是否自动迁移模型
@@ -24,11 +34,11 @@ type Router struct {
 	Scopes []Scope
 	Where  [][]string
 
-	CreateFields map[string]string // 创建操作字段映射
-	UpdateFields map[string]string // 更新操作字段映射
-	Delete       bool              // 是否为删除操作
-	GetOne       bool              // 是否获取单个记录
-	GetList      bool              // 是否获取列表
+	CreateOne map[string]string // 创建操作字段映射
+	UpdateOne map[string]string // 更新操作字段映射
+	DeleteOne bool              // 是否为删除操作
+	GetOne    bool              // 是否获取单个记录
+	GetList   bool              // 是否获取列表
 
 	completePath string // 完整路径
 	completeName string // 完整名称
@@ -94,11 +104,7 @@ func generateChiRouter(currentRouter *Router, parentChiRouter chi.Router) error 
 			}
 		})
 	} else {
-		// 如果未指定处理函数，默认使用 ServeHTTP 方法。
-		if currentRouter.Handler == nil {
-			currentRouter.Handler = currentRouter.ServeHTTP
-		}
-		parentChiRouter.Method(currentRouter.Method, currentRouter.Path, currentRouter.Handler)
+		parentChiRouter.Method(currentRouter.Method, currentRouter.Path, currentRouter)
 	}
 
 	return nil
@@ -108,8 +114,9 @@ func generateChiRouter(currentRouter *Router, parentChiRouter chi.Router) error 
 // w: HTTP 响应写入器。
 // req: HTTP 请求。
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	handler := &Handler{Router: r}
-	handler.ServeHTTP(w, req)
+	handler := &handler{Router: r}
+	res := handler.serveHTTP(w, req)
+	res.Send()
 }
 
 // isGroup 检查路由器是否为组路由。
