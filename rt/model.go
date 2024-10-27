@@ -11,6 +11,13 @@ import (
 // currentRouter: 当前路由器。
 // 返回错误信息（如果有）。
 func generateDBModel(currentRouter *Router) error {
+
+	if currentRouter.Model != nil && !currentRouter.NoAutoMigrate {
+		if err := db.DB.GORM.AutoMigrate(&currentRouter.Model); err != nil {
+			return fmt.Errorf("failed to auto-migrate model for router '%s': %w", currentRouter.completePath, err)
+		}
+	}
+
 	if isGroup(*currentRouter) {
 		for i := range currentRouter.Children {
 			child := &currentRouter.Children[i]
@@ -19,12 +26,6 @@ func generateDBModel(currentRouter *Router) error {
 			}
 		}
 		return nil
-	}
-
-	if currentRouter.Model != nil && !currentRouter.NoAutoMigrate {
-		if err := db.DB.GORM.AutoMigrate(&currentRouter.Model); err != nil {
-			return fmt.Errorf("failed to auto-migrate model for router '%s': %w", currentRouter.completePath, err)
-		}
 	}
 
 	return nil

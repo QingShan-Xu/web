@@ -48,7 +48,7 @@ type Router struct {
 // Register 函数注册路由并返回 chi.Router。
 // rootRouter: 根路由器。
 // 返回生成的 chi.Router 或错误信息。
-func Register(rootRouter *Router) (chi.Router, error) {
+func Register(rootRouter *Router) (*chi.Mux, error) {
 	if rootRouter == nil {
 		return nil, fmt.Errorf("root router cannot be nil")
 	}
@@ -59,6 +59,7 @@ func Register(rootRouter *Router) (chi.Router, error) {
 	// 初始化完整路径和名称。
 	initCompletePathAndName(rootRouter)
 
+	// 初始化路由
 	chiRouter := chi.NewRouter()
 	if err := generateChiRouter(rootRouter, chiRouter); err != nil {
 		return nil, fmt.Errorf("error generating router: %w", err)
@@ -86,7 +87,13 @@ func generateChiRouter(currentRouter *Router, parentChiRouter chi.Router) error 
 		return fmt.Errorf("router cannot be nil")
 	}
 
-	if isGroup(*currentRouter) {
+	if currentRouter.Path == "" {
+		fmt.Printf("%s(%s) : Path 为空, 已跳过路由注册\n", currentRouter.completePath, currentRouter.completeName)
+	}
+
+	isGroup := isGroup(*currentRouter)
+
+	if currentRouter.Path != "" && isGroup {
 		// 为当前组定义一个新的子路由。
 		parentChiRouter.Route(currentRouter.Path, func(subRouter chi.Router) {
 			// 应用中间件。
@@ -101,7 +108,9 @@ func generateChiRouter(currentRouter *Router, parentChiRouter chi.Router) error 
 				}
 			}
 		})
-	} else {
+	}
+
+	if currentRouter.Path != "" && !isGroup {
 		parentChiRouter.Method(currentRouter.Method, currentRouter.Path, currentRouter)
 	}
 

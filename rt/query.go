@@ -113,8 +113,8 @@ func generateQuery(currentRouter *Router) {
 		}
 	}
 
-	if currentRouter.Bind == nil && (currentRouter.Where != nil || currentRouter.Model != nil) {
-		log.Fatalf("router '%s' requires Bind when using WHERE or MODEL", currentRouter.completePath)
+	if currentRouter.Where != nil && currentRouter.Model == nil {
+		log.Fatalf("router '%s' requires Model when using WHERE", currentRouter.completePath)
 	}
 
 	var bindReader ds.FieldReader

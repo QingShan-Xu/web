@@ -104,7 +104,7 @@ func (r *Res) sendFile() {
 
 func (r *Res) sendJSON() {
 	r.w.Header().Set("Content-Type", ContentTypeJSON)
-	r.w.WriteHeader(r.Code)
+	r.w.WriteHeader(200)
 	json.NewEncoder(r.w).Encode(r)
 }
 

@@ -35,10 +35,13 @@ func (h *handler) serveHTTP(w http.ResponseWriter, r *http.Request) *bm.Res {
 		}
 	}
 
-	// 使用 ds 包解析绑定数据。
-	bindReader, err := ds.NewStructReader(bindData)
-	if err != nil {
-		return response.FailBackend(err)
+	var bindReader ds.FieldReader
+	if bindData != nil {
+		// 使用 ds 包解析绑定数据。
+		bindReader, err = ds.NewStructReader(bindData)
+		if err != nil {
+			return response.FailBackend(err)
+		}
 	}
 
 	currentDB := db.DB.GORM.Session(&gorm.Session{})
