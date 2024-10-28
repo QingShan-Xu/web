@@ -82,40 +82,45 @@ func (b *binder) bindData(r *http.Request, bindValue interface{}) error {
 	// 解析请求体数据（仅针对非 GET 请求）。
 	if r.Method != http.MethodGet {
 		contentType := r.Header.Get("Content-Type")
-		mediaType, _, err := mime.ParseMediaType(contentType)
-		if err != nil {
-			return fmt.Errorf("invalid Content-Type header: %w", err)
-		}
-
-		switch mediaType {
-		case "application/json":
-			// 解析 JSON 数据。
-			bodyMap := map[string]interface{}{}
-			body, err := io.ReadAll(r.Body)
+		// 有头部
+		if contentType != "" {
+			mediaType, _, err := mime.ParseMediaType(contentType)
 			if err != nil {
-				return fmt.Errorf("failed to read request body: %w", err)
-			}
-			defer r.Body.Close()
-
-			if len(body) == 0 {
-				body = []byte("{}") // 赋值为空的 JSON 对象
+				return fmt.Errorf("invalid Content-Type header: %w", err)
 			}
 
-			if err = json.Unmarshal(body, &bodyMap); err != nil {
-				return fmt.Errorf("failed to unmarshal JSON body: %w", err)
-			}
+			switch mediaType {
+			case "application/json":
+				// 解析 JSON 数据。
+				bodyMap := map[string]interface{}{}
+				body, err := io.ReadAll(r.Body)
+				if err != nil {
+					return fmt.Errorf("failed to read request body: %w", err)
+				}
+				defer r.Body.Close()
 
-			if err := decoder.Decode(bodyMap); err != nil {
-				return fmt.Errorf("failed to decode JSON body: %w", err)
-			}
-		case "application/x-www-form-urlencoded":
-			// 解析表单数据。
-			if err := r.ParseForm(); err != nil {
-				return fmt.Errorf("failed to parse form data: %w", err)
-			}
-			formMap := valuesToMap(r.PostForm)
-			if err := decoder.Decode(formMap); err != nil {
-				return fmt.Errorf("failed to decode form data: %w", err)
+				if len(body) == 0 {
+					body = []byte("{}") // 赋值为空的 JSON 对象
+				}
+
+				if err = json.Unmarshal(body, &bodyMap); err != nil {
+					return fmt.Errorf("failed to unmarshal JSON body: %w", err)
+				}
+
+				if err := decoder.Decode(bodyMap); err != nil {
+					return fmt.Errorf("failed to decode JSON body: %w", err)
+				}
+			case "application/x-www-form-urlencoded":
+				// 解析表单数据。
+				if err := r.ParseForm(); err != nil {
+					return fmt.Errorf("failed to parse form data: %w", err)
+				}
+				formMap := valuesToMap(r.PostForm)
+				if err := decoder.Decode(formMap); err != nil {
+					return fmt.Errorf("failed to decode form data: %w", err)
+				}
+			default:
+				return fmt.Errorf("not allowed Content-Type header: %w", mediaType)
 			}
 		}
 	}

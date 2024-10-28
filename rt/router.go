@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/QingShan-Xu/web/bm"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate"
+	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
@@ -21,15 +25,15 @@ type HandlerParams struct {
 
 // Router 定义了路由器结构体。
 type Router struct {
-	Name          string                            // 路由名称
-	Path          string                            // 路由路径
-	Method        string                            // 请求方法
-	Handler       func(HandlerParams) *bm.Res       // 处理函数
-	Bind          interface{}                       // 请求参数绑定结构体
-	Model         interface{}                       // 数据库模型
-	NoAutoMigrate bool                              // 是否自动迁移模型
-	Middlewares   []func(http.Handler) http.Handler // 中间件列表
-	Children      []Router                          // 子路由列表
+	Name          string                                 // 路由名称
+	Path          string                                 // 路由路径
+	Method        string                                 // 请求方法
+	Handler       func(HandlerParams) *bm.Res            // 处理函数
+	Bind          interface{}                            // 请求参数绑定结构体
+	Model         interface{}                            // 数据库模型
+	NoAutoMigrate bool                                   // 是否自动迁移模型
+	Middlewares   []func(next http.Handler) http.Handler // 中间件列表
+	Children      []Router                               // 子路由列表
 
 	Scopes []Scope
 	Where  [][]string
@@ -61,6 +65,31 @@ func Register(rootRouter *Router) (*chi.Mux, error) {
 
 	// 初始化路由
 	chiRouter := chi.NewRouter()
+
+	chiRouter.Use(
+		middleware.Logger,    // 打印
+		middleware.Recoverer, // 防崩溃
+	)
+
+	usePing := viper.GetString("App.Ping")
+	useNoCache := viper.GetBool("App.NoCache")
+	useRedirectSlashes := viper.GetBool("App.RedirectSlashes")
+	LimitByMinuteIP := viper.GetInt("App.LimitByMinuteIP")
+
+	if usePing != "" {
+		chiRouter.Use(middleware.Heartbeat(usePing))
+	}
+	if useNoCache {
+		chiRouter.Use(middleware.NoCache)
+	}
+	// 匹配带有尾部斜杠的请求路径，并重定向到相同的路径，减去尾部斜杠 http://127.0.0.1/user/ -> http://127.0.0.1/user
+	if useRedirectSlashes {
+		chiRouter.Use(middleware.RedirectSlashes)
+	}
+	if LimitByMinuteIP != 0 {
+		chiRouter.Use(httprate.LimitByIP(LimitByMinuteIP, 1*time.Minute))
+	}
+
 	if err := generateChiRouter(rootRouter, chiRouter); err != nil {
 		return nil, fmt.Errorf("error generating router: %w", err)
 	}
