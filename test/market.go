@@ -27,17 +27,17 @@ package test
 // }
 
 // type ReqBindGetUser struct {
-// 	MarketID   int    `uri:"market_id"`
+// 	MarketID   int    `bind:"market_id"`
 // 	MarketName string `param:"market_name" binding:"required"`
 // }
 
 // type ReqUpdatePet struct {
-// 	ID   int    `uri:"id" binding:"required"`
+// 	ID   int    `bind:"id" binding:"required"`
 // 	Name string `json:"name" binding:"required"`
 // }
 
 // type ReqCreatePet struct {
-// 	UserID int    `uri:"user_id" binding:"required"`
+// 	UserID int    `bind:"user_id" binding:"required"`
 // 	Name   string `json:"name" binding:"required"`
 // 	Status string `json:"status" binding:"required"`
 // }
