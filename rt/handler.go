@@ -101,14 +101,13 @@ func (h *handler) serveHTTP(w http.ResponseWriter, r *http.Request) *bm.Res {
 		newModel := reflect.New(reflect.TypeOf(h.Router.Model)).Interface()
 		if err := currentDB.First(newModel).Error; err != nil {
 			return response.FailFront("No corresponding data")
-
 		}
 
 		finisherParams, err := h.genUpdateParams(bindReader, newModel)
 		if err != nil {
 			return response.FailFront(err)
 		}
-		if err := currentDB.Updates(finisherParams).Error; err != nil {
+		if err := db.DB.GORM.Save(finisherParams).Error; err != nil {
 			return response.FailFront(err)
 		}
 		return response.SucJson(finisherParams)
