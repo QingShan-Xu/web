@@ -35,8 +35,9 @@ type Router struct {
 	Middlewares   []func(next http.Handler) http.Handler // 中间件列表
 	Children      []Router                               // 子路由列表
 
-	Scopes []Scope
-	Where  [][]string
+	Scopes  []Scope
+	Where   [][]string
+	Preload [][]string
 
 	CreateOne map[string]string // 创建操作字段映射
 	UpdateOne map[string]string // 更新操作字段映射

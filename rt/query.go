@@ -81,6 +81,28 @@ func (q *query) where(whereQuery []string) (Scope, error) {
 	}, nil
 }
 
+// preload 添加查询条件。
+// preloadQuery: 查询条件数组。
+// 返回 Scope 函数或错误信息。
+func (q *query) preload(preloadQuery []string) (Scope, error) {
+	if preloadQuery == nil {
+		return nil, fmt.Errorf("preload parameter cannot be nil")
+	}
+
+	return func(reader ds.FieldReader) func(db *gorm.DB) *gorm.DB {
+		return func(db *gorm.DB) *gorm.DB {
+			if len(preloadQuery) > 1 {
+				preloadArgs := []interface{}{}
+				for _, args := range preloadQuery[1:] {
+					preloadArgs = append(preloadArgs, args)
+				}
+				return db.Preload(preloadQuery[0], preloadArgs...)
+			}
+			return db.Preload(preloadQuery[0])
+		}
+	}, nil
+}
+
 // containsNil 检查切片中是否包含 nil 值。
 // values: 接口切片。
 // 返回是否包含 nil 的布尔值。
@@ -142,6 +164,18 @@ func generateQuery(currentRouter *Router) {
 		}
 		for _, where := range currentRouter.Where {
 			scope, err := query.where(where)
+			if err != nil {
+				log.Fatalf("%s(%s) %v", currentRouter.completePath, currentRouter.completeName, err)
+			}
+			currentRouter.Scopes = append(currentRouter.Scopes, scope)
+		}
+	}
+	if currentRouter.Preload != nil {
+		if currentRouter.Model == nil {
+			log.Fatalf("router '%s' requires Model when using Preload", currentRouter.completePath)
+		}
+		for _, preload := range currentRouter.Preload {
+			scope, err := query.preload(preload)
 			if err != nil {
 				log.Fatalf("%s(%s) %v", currentRouter.completePath, currentRouter.completeName, err)
 			}
