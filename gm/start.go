@@ -22,7 +22,7 @@ func Start(
 ) {
 	cfg.init()
 	db.DB.Register()
-	r := routerRegister(cfg, router)
+	r := routerRegister(router)
 
 	brforeStart()
 	// 监听端口

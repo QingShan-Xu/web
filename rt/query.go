@@ -70,7 +70,11 @@ func (q *query) where(whereQuery []string) (Scope, error) {
 		fieldValues := []interface{}{}
 		for _, fieldName := range whereQuery[1:] {
 			fieldValue, _ := reader.GetField(fieldName)
-			fieldValues = append(fieldValues, fieldValue.Interface())
+			value := fieldValue.Interface()
+			if IsNil(value) {
+				fieldValues = append(fieldValues, nil)
+			}
+			fieldValues = append(fieldValues, value)
 		}
 		return func(db *gorm.DB) *gorm.DB {
 			if containsNil(fieldValues) {
@@ -182,4 +186,20 @@ func generateQuery(currentRouter *Router) {
 			currentRouter.Scopes = append(currentRouter.Scopes, scope)
 		}
 	}
+}
+
+func IsNil(i interface{}) bool {
+	if i == nil {
+		return true
+	}
+
+	// Get the value of the interface
+	v := reflect.ValueOf(i)
+
+	// Check if the value is a pointer and if it's nil
+	if v.Kind() == reflect.Ptr {
+		return v.IsNil()
+	}
+
+	return false
 }

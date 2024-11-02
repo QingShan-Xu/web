@@ -54,7 +54,11 @@ func (db *DBClassify) Register() error {
 		if err != nil {
 			log.Fatalf("db err: %e", err)
 		}
-		db.GORM = gormDB
+		if viper.GetBool("App.Dev") {
+			db.GORM = gormDB.Debug()
+		} else {
+			db.GORM = gormDB
+		}
 		return nil
 	}
 
