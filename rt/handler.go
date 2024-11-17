@@ -44,6 +44,7 @@ func (h *handler) serveHTTP(w http.ResponseWriter, r *http.Request) *bm.Res {
 		}
 	}
 
+	fmt.Printf("%+v", bindData)
 	currentDB := db.DB.GORM.Session(&gorm.Session{})
 
 	// 应用查询范围（Scopes）。
@@ -276,6 +277,7 @@ func (h *handler) genUpdateParams(bindReader ds.FieldReader, model interface{}) 
 		TagName:              "bind",
 		IgnoreUntaggedFields: true,
 		Result:               model,
+		ZeroFields:           true,
 	}
 	decoder, _ := mapstructure.NewDecoder(decoderConfig)
 	if err := decoder.Decode(modelMap); err != nil {

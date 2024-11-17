@@ -34,19 +34,21 @@ func (b *binder) bindAndValidate(routerBind interface{}, r *http.Request) (inter
 
 	// 创建绑定数据的实例。
 	bindType := reflect.TypeOf(routerBind)
-	bindValue := reflect.New(bindType).Interface()
+	bindValue := reflect.New(bindType)
+	bindValue.Elem().Set(reflect.ValueOf(routerBind))
+	bindData := bindValue.Interface()
 
 	// 执行数据绑定。
-	if err := b.bindData(r, bindValue); err != nil {
+	if err := b.bindData(r, bindData); err != nil {
 		return nil, err
 	}
 
 	// 执行数据验证。
-	if err := b.validateData(bindValue); err != nil {
+	if err := b.validateData(bindData); err != nil {
 		return nil, err
 	}
 
-	return bindValue, nil
+	return bindData, nil
 }
 
 // bindData 绑定请求数据到结构体。
