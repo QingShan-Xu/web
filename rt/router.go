@@ -38,6 +38,7 @@ type Router struct {
 	Scopes  []Scope
 	Where   [][]string
 	Preload [][]string
+	Order   []string
 
 	CreateOne map[string]string // 创建操作字段映射
 	UpdateOne map[string]string // 更新操作字段映射

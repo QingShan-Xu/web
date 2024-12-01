@@ -144,7 +144,7 @@ func (h *handler) serveHTTP(w http.ResponseWriter, r *http.Request) *bm.Res {
 		if bindReader != nil {
 			// 获取分页参数。
 			if pageSizeField, err := bindReader.GetField("PageSize"); err == nil {
-				if pageSizeValue, ok := pageSizeField.SafeInt(); ok && pageSizeValue > 0 && pageSizeValue <= 100 {
+				if pageSizeValue, ok := pageSizeField.SafeInt(); ok && pageSizeValue > 0 {
 					pagination.PageSize = pageSizeValue
 				}
 			}

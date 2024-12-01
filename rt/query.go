@@ -107,6 +107,21 @@ func (q *query) preload(preloadQuery []string) (Scope, error) {
 	}, nil
 }
 
+// preload 添加查询条件。
+// preloadQuery: 查询条件数组。
+// 返回 Scope 函数或错误信息。
+func (q *query) order(orderQuery string) (Scope, error) {
+	if orderQuery == "" {
+		return nil, fmt.Errorf("orderQuery parameter cannot be nil")
+	}
+
+	return func(reader ds.FieldReader) func(db *gorm.DB) *gorm.DB {
+		return func(db *gorm.DB) *gorm.DB {
+			return db.Order(orderQuery)
+		}
+	}, nil
+}
+
 // containsNil 检查切片中是否包含 nil 值。
 // values: 接口切片。
 // 返回是否包含 nil 的布尔值。
@@ -174,12 +189,26 @@ func generateQuery(currentRouter *Router) {
 			currentRouter.Scopes = append(currentRouter.Scopes, scope)
 		}
 	}
+
 	if currentRouter.Preload != nil {
 		if currentRouter.Model == nil {
 			log.Fatalf("router '%s' requires Model when using Preload", currentRouter.completePath)
 		}
 		for _, preload := range currentRouter.Preload {
 			scope, err := query.preload(preload)
+			if err != nil {
+				log.Fatalf("%s(%s) %v", currentRouter.completePath, currentRouter.completeName, err)
+			}
+			currentRouter.Scopes = append(currentRouter.Scopes, scope)
+		}
+	}
+
+	if currentRouter.Order != nil {
+		if currentRouter.Model == nil {
+			log.Fatalf("router '%s' requires Model when using Order", currentRouter.completePath)
+		}
+		for _, order := range currentRouter.Order {
+			scope, err := query.order(order)
 			if err != nil {
 				log.Fatalf("%s(%s) %v", currentRouter.completePath, currentRouter.completeName, err)
 			}
